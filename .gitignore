@@ -4,3 +4,31 @@
 # Ignore build directories
 /build/
 /bin/
+
+# Flutter/Dart specific
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+build/
+.filecache
+*.dll
+*.stamp
+*.json
+*.yaml
+*.d
+debug_*
+native_*
+kernel_*
+gen_*
+flutter_assets.d
+App
+
+# Exclude specific directories
+**/debug/
+**/profile/
+**/release/
+
+# Keep important yaml files
+!pubspec.yaml
