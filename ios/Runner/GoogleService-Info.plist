@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLIENT_ID</key>
+	<string>529054282209-kr4laf56num8mkr68rpij7669slh577u.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.529054282209-kr4laf56num8mkr68rpij7669slh577u</string>
+	<key>ANDROID_CLIENT_ID</key>
+	<string>529054282209-4e68fknm0oagcu5rnd74dih3goih6bhf.apps.googleusercontent.com</string>
+	<key>API_KEY</key>
+	<string>AIzaSyC5xz8PJ43OyHYyo_ve4ZTuVaX26ydqREs</string>
+	<key>GCM_SENDER_ID</key>
+	<string>529054282209</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.example.agrisync</string>
+	<key>PROJECT_ID</key>
+	<string>agrisync-9f9e5</string>
+	<key>STORAGE_BUCKET</key>
+	<string>agrisync-9f9e5.firebasestorage.app</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:529054282209:ios:17feba68bc64027d08e2a0</string>
+</dict>
+</plist>

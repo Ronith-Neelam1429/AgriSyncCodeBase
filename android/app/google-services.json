@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "529054282209",
+    "project_id": "agrisync-9f9e5",
+    "storage_bucket": "agrisync-9f9e5.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:529054282209:android:ba9e7b7f0d576d9008e2a0",
+        "android_client_info": {
+          "package_name": "com.example.agrisync"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "529054282209-4e68fknm0oagcu5rnd74dih3goih6bhf.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.agrisync",
+            "certificate_hash": "666867492255e8b7b1748c1fcc73e1989dd434b8"
+          }
+        },
+        {
+          "client_id": "529054282209-abkihpdv90ki67labouru2463gbm1b5m.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDO9RzO_7OukZBJR8ni4MtwdXk20VEp9Ho"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "529054282209-abkihpdv90ki67labouru2463gbm1b5m.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "529054282209-kr4laf56num8mkr68rpij7669slh577u.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.agrisync"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

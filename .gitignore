@@ -1,0 +1,6 @@
+# Ignore compiled output
+*.apk
+
+# Ignore build directories
+/build/
+/bin/
