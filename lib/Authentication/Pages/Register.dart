@@ -2,6 +2,7 @@ import 'package:agrisync/App%20Pages/HomePage.dart';
 import 'package:agrisync/Authentication/AuthService/Google_Service.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({Key? key}) : super(key: key);
@@ -11,6 +12,8 @@ class RegisterPage extends StatefulWidget {
 }
 
 class _RegisterPageState extends State<RegisterPage> {
+  final _firstNameController = TextEditingController();
+  final _lastNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
@@ -21,55 +24,123 @@ class _RegisterPageState extends State<RegisterPage> {
 
   // Firebase Auth instance
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   // Error message
   String? _errorMessage;
 
   // Register with email and password
   Future<void> register() async {
-    // Validate passwords match
-    if (_passwordController.text != _confirmPasswordController.text) {
+  if (_passwordController.text.trim().isEmpty ||
+      _firstNameController.text.trim().isEmpty ||
+      _lastNameController.text.trim().isEmpty ||
+      _emailController.text.trim().isEmpty) {
+    setState(() {
+      _errorMessage = 'All fields are required';
+    });
+    return;
+  }
+
+  if (_passwordController.text != _confirmPasswordController.text) {
+    setState(() {
+      _errorMessage = 'Passwords do not match';
+    });
+    return;
+  }
+
+  setState(() {
+    _isLoading = true;
+    _errorMessage = null;
+  });
+
+  try {
+    // Debug log for registration start
+    print('Starting registration process');
+    print('Email: ${_emailController.text.trim()}');
+    print('First Name: ${_firstNameController.text.trim()}');
+    print('Last Name: ${_lastNameController.text.trim()}');
+
+    // Create user with email and password
+    UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
+      email: _emailController.text.trim(),
+      password: _passwordController.text.trim(),
+    );
+
+    print('Firebase Auth successful. UID: ${userCredential.user!.uid}');
+
+    // Prepare user data
+    final userData = {
+      'firstName': _firstNameController.text.trim(),
+      'lastName': _lastNameController.text.trim(),
+      'email': _emailController.text.trim(),
+      'createdAt': FieldValue.serverTimestamp(),
+      'uid': userCredential.user!.uid,
+    };
+
+    print('Prepared user data: $userData');
+
+    // Get reference to Firestore
+    final FirebaseFirestore firestore = FirebaseFirestore.instance;
+    
+    try {
+      // Attempt to write to Firestore
+      print('Attempting to write to Firestore at path: users/${userCredential.user!.uid}');
+      
+      await firestore
+          .collection('users')
+          .doc(userCredential.user!.uid)
+          .set(userData);
+
+      print('Firestore write successful');
+
+      // Verify the write
+      final docSnapshot = await firestore
+          .collection('users')
+          .doc(userCredential.user!.uid)
+          .get();
+
+      if (docSnapshot.exists) {
+        print('Document verified in Firestore');
+        print('Stored data: ${docSnapshot.data()}');
+      } else {
+        print('WARNING: Document not found after write!');
+      }
+
+    } catch (firestoreError) {
+      print('Firestore error: $firestoreError');
       setState(() {
-        _errorMessage = 'Passwords do not match';
+        _errorMessage = 'Error saving user data: $firestoreError';
       });
+      // Consider whether to delete the Auth user if Firestore fails
       return;
     }
 
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
-
-    try {
-      await _auth.createUserWithEmailAndPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
+    // Only navigate if everything was successful
+    if (mounted) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => HomePage()),
       );
+    }
 
-      // Navigate to home page on successful registration
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => HomePage()),
-        );
-      }
-    } on FirebaseAuthException catch (e) {
+  } on FirebaseAuthException catch (e) {
+    print('Firebase Auth error: ${e.code} - ${e.message}');
+    setState(() {
+      _errorMessage = getErrorMessage(e.code);
+    });
+  } catch (e) {
+    print('Unexpected error: $e');
+    setState(() {
+      _errorMessage = 'An unexpected error occurred: $e';
+    });
+  } finally {
+    if (mounted) {
       setState(() {
-        _errorMessage = getErrorMessage(e.code);
+        _isLoading = false;
       });
-    } catch (e) {
-      setState(() {
-        _errorMessage = 'An error occurred. Please try again.';
-      });
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
     }
   }
-
+}
   // Helper method to get user-friendly error messages
   String getErrorMessage(String code) {
     switch (code) {
@@ -103,6 +174,43 @@ class _RegisterPageState extends State<RegisterPage> {
               style: const TextStyle(color: Colors.red),
             ),
           ),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.grey[900],
+            borderRadius: BorderRadius.circular(30),
+          ),
+          child: TextField(
+            controller: _firstNameController,
+            style: const TextStyle(color: Colors.white),
+            decoration: const InputDecoration(
+              hintText: 'First Name',
+              hintStyle: TextStyle(color: Colors.grey),
+              prefixIcon: Icon(Icons.person_outline, color: Colors.green),
+              border: InputBorder.none,
+              contentPadding: EdgeInsets.all(20),
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        // Last Name Field
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.grey[900],
+            borderRadius: BorderRadius.circular(30),
+          ),
+          child: TextField(
+            controller: _lastNameController,
+            style: const TextStyle(color: Colors.white),
+            decoration: const InputDecoration(
+              hintText: 'Last Name',
+              hintStyle: TextStyle(color: Colors.grey),
+              prefixIcon: Icon(Icons.person_outline, color: Colors.green),
+              border: InputBorder.none,
+              contentPadding: EdgeInsets.all(20),
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
         Container(
           decoration: BoxDecoration(
             color: Colors.grey[900],
