@@ -45,12 +45,12 @@ class _LoginOrRegisterPageState extends State<LoginOrRegisterPage> {
                           text: 'Agri',
                           style: TextStyle(
                               fontSize: 28,
-                              color: Color.fromARGB(255, 187, 229, 193)),
+                              color: Color.fromARGB(255, 73, 167, 87)),
                         ),
                         TextSpan(
                           text: 'Sync',
                           style:
-                              TextStyle(color: Color.fromARGB(255, 33, 208, 243)),
+                              TextStyle(color: Color.fromARGB(255, 72, 219, 214)),
                         ),
                       ],
                     ),

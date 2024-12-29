@@ -267,11 +267,11 @@ class _LoginPageState extends State<LoginPage> {
             OutlinedButton.icon(
               onPressed: () {},
               icon: Image.network(
-                'https://www.apple.com/favicon.ico',
+                'https://www.yahoo.com/favicon.ico',
                 height: 24,
               ),
               label: const Text(
-                'Apple',
+                'Yahoo',
                 style: TextStyle(color: Colors.grey),
               ),
               style: OutlinedButton.styleFrom(

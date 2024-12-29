@@ -373,11 +373,11 @@ class _RegisterPageState extends State<RegisterPage> {
             OutlinedButton.icon(
               onPressed: () {},
               icon: Image.network(
-                'https://www.google.com/favicon.ico',
+                'https://www.yahoo.com/favicon.ico',
                 height: 24,
               ),
               label: const Text(
-                'Facebook',
+                'Yahoo',
                 style: TextStyle(color: Colors.grey),
               ),
               style: OutlinedButton.styleFrom(
