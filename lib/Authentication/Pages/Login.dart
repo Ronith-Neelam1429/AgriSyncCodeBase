@@ -1,7 +1,8 @@
-import 'package:agrisync/App%20Pages/HomePage.dart';
 import 'package:agrisync/Authentication/AuthService/Google_Service.dart';
+import 'package:agrisync/Components/CustomNavBar.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({Key? key}) : super(key: key);
@@ -18,6 +19,38 @@ class _LoginPageState extends State<LoginPage> {
   bool _isLoading = false;
   String? _errorMessage;
   final googleAuth = GoogleAuthService();
+  final _prefs = SharedPreferences.getInstance();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedCredentials();
+  }
+
+  // Load saved credentials if they exist
+  Future<void> _loadSavedCredentials() async {
+    final prefs = await _prefs;
+    setState(() {
+      _rememberMe = prefs.getBool('rememberMe') ?? false;
+      if (_rememberMe) {
+        usernameController.text = prefs.getString('email') ?? '';
+        passwordController.text = prefs.getString('password') ?? '';
+      }
+    });
+  }
+
+  Future<void> _handleRememberMe() async {
+    final prefs = await _prefs;
+    if (_rememberMe) {
+      await prefs.setString('email', usernameController.text);
+      await prefs.setString('password', passwordController.text);
+      await prefs.setBool('rememberMe', true);
+    } else {
+      await prefs.remove('email');
+      await prefs.remove('password');
+      await prefs.setBool('rememberMe', false);
+    }
+  }
 
   // Sign in with email and password
   Future<void> signUserIn() async {
@@ -37,6 +70,17 @@ class _LoginPageState extends State<LoginPage> {
         email: usernameController.text.trim(),
         password: passwordController.text.trim(),
       );
+      if (userCredential.user != null) {
+        await _handleRememberMe(); // Save credentials if remember me is checked
+
+        if (!mounted) return;
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const HomePageWithNavBar(),
+          ),
+        );
+      }
 
       final user = userCredential.user;
 
@@ -48,7 +92,7 @@ class _LoginPageState extends State<LoginPage> {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => const HomePage(),
+            builder: (context) => const HomePageWithNavBar(),
           ),
         );
       } else {
@@ -80,6 +124,12 @@ class _LoginPageState extends State<LoginPage> {
           _isLoading = false;
         });
       }
+    }
+    @override
+    void dispose() {
+      usernameController.dispose();
+      passwordController.dispose();
+      super.dispose();
     }
   }
 
@@ -230,7 +280,7 @@ class _LoginPageState extends State<LoginPage> {
                   if (userCredential != null && mounted) {
                     Navigator.pushReplacement(
                       context,
-                      MaterialPageRoute(builder: (context) => const HomePage()),
+                      MaterialPageRoute(builder: (context) => const HomePageWithNavBar()),
                     );
                   }
                 } catch (e, stackTrace) {

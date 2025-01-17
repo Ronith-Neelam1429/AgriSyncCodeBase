@@ -1,9 +1,11 @@
-import 'package:agrisync/App%20Pages/Weather%20Page/LocationService.dart';
-import 'package:agrisync/App%20Pages/Weather%20Page/WeatherCard.dart';
+import 'package:agrisync/App%20Pages/Weather%20Components/LocationService.dart';
+import 'package:agrisync/App%20Pages/Weather%20Components/WeatherCard.dart';
+import 'package:agrisync/Authentication/Pages/LogOrSignPage.dart';
 import 'package:agrisync/Components/CustomAppBar.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -101,6 +103,31 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  // Todo: Get rid of this
+  Future<void> _logout() async {
+    try {
+      // Clear saved credentials
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('email');
+      await prefs.remove('password');
+      await prefs.setBool('rememberMe', false);
+
+      // Sign out from Firebase
+      await FirebaseAuth.instance.signOut();
+
+      if (!mounted) return;
+      
+      // Navigate back to login page
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => const LoginOrRegisterPage()),
+        (route) => false,
+      );
+    } catch (e) {
+      print('Error during logout: $e');
+    }
+  }
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -140,7 +167,7 @@ class _HomePageState extends State<HomePage> {
               )
             else if (_userCity != null)
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                padding: const EdgeInsets.symmetric(horizontal: 0.0),
                 child: WeatherCard(
                   apiKey: 'eeaca43a04ac307588b75ac98f9871d7',
                   city: _userCity!,
@@ -153,6 +180,15 @@ class _HomePageState extends State<HomePage> {
                   child: Text('Unable to load weather data'),
                 ),
               ),
+              Positioned(
+                    right: 16,
+                    top: 16,
+                    child: IconButton(
+                      icon: const Icon(Icons.logout),
+                      onPressed: _logout,
+                      tooltip: 'Logout',
+                    ),
+                  ),
           ],
         ),
       ),

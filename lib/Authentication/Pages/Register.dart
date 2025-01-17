@@ -1,5 +1,5 @@
-import 'package:agrisync/App%20Pages/HomePage.dart';
 import 'package:agrisync/Authentication/AuthService/Google_Service.dart';
+import 'package:agrisync/Components/CustomNavBar.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -119,7 +119,7 @@ class _RegisterPageState extends State<RegisterPage> {
     if (mounted) {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => HomePage()),
+        MaterialPageRoute(builder: (context) => HomePageWithNavBar()),
       );
     }
 
@@ -338,7 +338,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   if (userCredential != null && mounted) {
                     Navigator.pushReplacement(
                       context,
-                      MaterialPageRoute(builder: (context) => const HomePage()),
+                      MaterialPageRoute(builder: (context) => const HomePageWithNavBar()),
                     );
                   }
                 } catch (e) {
