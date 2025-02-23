@@ -1,7 +1,7 @@
 import 'package:agrisync/App%20Pages/HomePage.dart';
-import 'package:agrisync/App%20Pages/MonitorPage.dart';
-import 'package:agrisync/App%20Pages/ProfilePage.dart';
-import 'package:agrisync/App%20Pages/WeatherPage.dart';
+import 'package:agrisync/App%20Pages/Core%20Pages/ProfilePage.dart';
+import 'package:agrisync/App%20Pages/Core%20Pages/WeatherPage.dart';
+import 'package:agrisync/App%20Pages/Core%20Pages/MarketPage.dart';
 import 'package:flutter/material.dart';
 import 'package:curved_navigation_bar/curved_navigation_bar.dart';
 
@@ -17,7 +17,7 @@ class _HomePageWithNavBarState extends State<HomePageWithNavBar> {
   List<Widget> _pages = [
     const HomePage(),
     const WeatherPage(),
-    const MonitorPage(),
+    const MarketPlacePage(),
     const ProfilePage(),
   ];
 
@@ -49,7 +49,7 @@ class _HomePageWithNavBarState extends State<HomePageWithNavBar> {
           items: const <Widget>[
             Icon(Icons.home, size: 30, color: Colors.white),
             Icon(Icons.cloud, size: 30, color: Colors.white),
-            Icon(Icons.trending_up, size: 30, color: Colors.white),
+            Icon(Icons.shopping_cart, size: 30, color: Colors.white),
             Icon(Icons.person, size: 30, color: Colors.white),
           ],
           onTap: (index) {

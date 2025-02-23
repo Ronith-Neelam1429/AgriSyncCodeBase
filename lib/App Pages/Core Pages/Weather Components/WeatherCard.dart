@@ -1,4 +1,4 @@
-import 'package:agrisync/App%20Pages/Weather%20Components/WeatherIcons.dart';
+import 'package:agrisync/App%20Pages/Core%20Pages/Weather%20Components/WeatherIcons.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -29,6 +29,10 @@ class _WeatherCardState extends State<WeatherCard> {
     fetchWeatherData();
   }
 
+  double celsiusToFahrenheit(double celsius) {
+    return (celsius * 9 / 5) + 32;
+  }
+
   Future<void> fetchWeatherData() async {
     try {
       final url =
@@ -56,8 +60,6 @@ class _WeatherCardState extends State<WeatherCard> {
 
   bool _isNight() {
     if (weatherData == null) return false;
-
-    // OpenWeatherMap icon codes end with 'd' for day and 'n' for night
     final iconCode = weatherData!['weather'][0]['icon'] as String;
     return iconCode.endsWith('n');
   }
@@ -65,18 +67,7 @@ class _WeatherCardState extends State<WeatherCard> {
   String _getWeatherType() {
     if (weatherData == null) return 'clear';
 
-    final condition =
-        weatherData!['weather'][0]['main'].toString().toLowerCase();
     final id = weatherData!['weather'][0]['id'];
-
-    // OpenWeatherMap condition codes:
-    // 2xx: Thunderstorm
-    // 3xx: Drizzle
-    // 5xx: Rain
-    // 6xx: Snow
-    // 7xx: Atmosphere (mist, smoke, etc.)
-    // 800: Clear
-    // 80x: Clouds
 
     if (id >= 200 && id < 300) {
       return 'stormy';
@@ -92,11 +83,12 @@ class _WeatherCardState extends State<WeatherCard> {
   String _getWeatherAdvice() {
     if (weatherData == null) return '';
 
-    final temp = weatherData!['main']['temp'];
+    final tempC = weatherData!['main']['temp'];
+    final tempF = celsiusToFahrenheit(tempC);
     final humidity = weatherData!['main']['humidity'];
     final clouds = weatherData!['clouds']['all'];
 
-    if (temp > 20 && humidity < 85 && clouds < 70) {
+    if (tempF > 68 && humidity < 85 && clouds < 70) {
       return 'Today is a good day to apply pesticides.';
     }
     return 'Not recommended for pesticide application.';
@@ -123,8 +115,11 @@ class _WeatherCardState extends State<WeatherCard> {
       );
     }
 
+    // Convert temperature from Celsius to Fahrenheit
+    final tempF = celsiusToFahrenheit(weatherData!['main']['temp']);
+
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      padding: const EdgeInsets.symmetric(horizontal: 10.0),
       child: Card(
         elevation: 4,
         shape: RoundedRectangleBorder(
@@ -156,7 +151,7 @@ class _WeatherCardState extends State<WeatherCard> {
                   ),
                   WeatherIcon(
                     weatherType: _getWeatherType(),
-                    isNight: _isNight(), // Add this line if missing
+                    isNight: _isNight(),
                     size: 48,
                     color: Colors.white,
                   ),
@@ -166,7 +161,7 @@ class _WeatherCardState extends State<WeatherCard> {
               Row(
                 children: [
                   Text(
-                    '${weatherData!['main']['temp'].round()}°C',
+                    '${tempF.round()}°F',
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 28,
