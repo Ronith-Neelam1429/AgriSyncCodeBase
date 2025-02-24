@@ -1,4 +1,6 @@
 import 'package:agrisync/App%20Pages/Core%20Pages/MarketPlace/Equipment/EquipmentPage.dart';
+import 'package:agrisync/App%20Pages/Core%20Pages/MarketPlace/Fertilizers/FertilizerPage.dart';
+import 'package:agrisync/App%20Pages/Core%20Pages/MarketPlace/Seeds/SeedsPage.dart';
 import 'package:flutter/material.dart';
 
 class MarketPlacePage extends StatefulWidget {
@@ -164,6 +166,16 @@ class _MarketPlacePageState extends State<MarketPlacePage> {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => EquipmentPage()),
+              );
+            } else if (title == 'Seeds') {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => SeedsPage()),
+              );
+            } else if (title == 'Fertilizers') {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => FertilizersPage()),
               );
             }
           },

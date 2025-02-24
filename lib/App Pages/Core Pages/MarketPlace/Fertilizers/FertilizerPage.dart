@@ -2,72 +2,72 @@ import 'package:agrisync/App%20Pages/Core%20Pages/MarketPlace/ListingModel.dart'
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
-class EquipmentPage extends StatefulWidget {
+class FertilizersPage extends StatefulWidget {
   @override
-  _EquipmentPageState createState() => _EquipmentPageState();
+  _FertilizersPageState createState() => _FertilizersPageState();
 }
 
-class _EquipmentPageState extends State<EquipmentPage> {
+class _FertilizersPageState extends State<FertilizersPage> {
   String selectedFilter = 'All';
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  RangeValues _priceRange = const RangeValues(0, 100000);
+  RangeValues _priceRange = const RangeValues(0, 500); // Adjusted for fertilizer pricing
 
   final List<String> filters = [
     'All',
-    'New',
-    'Used',
+    'Organic',
+    'Chemical',
     'On Sale',
     'Featured',
     'Local'
   ];
 
   Stream<List<EquipmentListing>> getFilteredListings() {
-  // Start with base query and add list filter
-  Query query = _firestore.collection('marketPlace')
-      .where('list', isEqualTo: 'Equipment');
+    // Start with base query and add list filter
+    Query query = _firestore.collection('marketPlace')
+        .where('list', isEqualTo: 'Fertilizer');
 
-  // Add condition filter if selected
-  if (selectedFilter != 'All') {
-    query = query.where('condition', isEqualTo: selectedFilter);
-  }
-
-  return query.snapshots().map((snapshot) {
-    List<EquipmentListing> validListings = [];
-    
-    for (var doc in snapshot.docs) {
-      try {
-        final data = doc.data() as Map<String, dynamic>;
-        double price = 0.0;
-        var rawPrice = data['price'];
-        if (rawPrice is num) {
-          price = rawPrice.toDouble();
-        } else if (rawPrice is String) {
-          price = double.tryParse(rawPrice) ?? 0.0;
-        }
-        
-        final listing = EquipmentListing(
-          name: data['name'] as String? ?? '',
-          price: price,
-          condition: data['condition'] as String? ?? '',
-          imageUrl: data['imageURL'] as String? ?? '',
-          list: data['list'] as String? ?? '',
-          category: data['category'] as String? ?? '',
-          retailURL: data['retailURL'] as String? ?? '',
-          retailer: data['retailer'] as String? ?? '',
-        );
-        
-        if (listing.price >= _priceRange.start && listing.price <= _priceRange.end) {
-          validListings.add(listing);
-        }
-      } catch (e) {
-        print('Error parsing document ${doc.id}: $e');
-        continue;
-      }
+    // Add condition filter if selected
+    if (selectedFilter != 'All') {
+      query = query.where('condition', isEqualTo: selectedFilter);
     }
-    
-    return validListings;
-  });
-}
+
+    return query.snapshots().map((snapshot) {
+      List<EquipmentListing> validListings = [];
+      
+      for (var doc in snapshot.docs) {
+        try {
+          final data = doc.data() as Map<String, dynamic>;
+          double price = 0.0;
+          var rawPrice = data['price'];
+          if (rawPrice is num) {
+            price = rawPrice.toDouble();
+          } else if (rawPrice is String) {
+            price = double.tryParse(rawPrice) ?? 0.0;
+          }
+          
+          final listing = EquipmentListing(
+            name: data['name'] as String? ?? '',
+            price: price,
+            condition: data['condition'] as String? ?? '',
+            imageUrl: data['imageURL'] as String? ?? '',
+            list: data['list'] as String? ?? '',
+            category: data['category'] as String? ?? '',
+            retailURL: data['retailURL'] as String? ?? '',
+            retailer: data['retailer'] as String? ?? '',
+          );
+          
+          if (listing.price >= _priceRange.start && listing.price <= _priceRange.end) {
+            validListings.add(listing);
+          }
+        } catch (e) {
+          print('Error parsing document ${doc.id}: $e');
+          continue;
+        }
+      }
+      
+      return validListings;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -77,7 +77,7 @@ class _EquipmentPageState extends State<EquipmentPage> {
         slivers: [
           // App Bar
           SliverAppBar(
-            title: const Text('Equipment'),
+            title: const Text('Fertilizers'),
             backgroundColor: Colors.white,
             elevation: 0,
             floating: true,
@@ -101,7 +101,7 @@ class _EquipmentPageState extends State<EquipmentPage> {
                 ),
                 child: TextField(
                   decoration: InputDecoration(
-                    hintText: 'Search equipment...',
+                    hintText: 'Search fertilizers...',
                     prefixIcon: const Icon(Icons.search),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),

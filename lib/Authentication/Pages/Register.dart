@@ -24,7 +24,6 @@ class _RegisterPageState extends State<RegisterPage> {
 
   // Firebase Auth instance
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   // Error message
   String? _errorMessage;
