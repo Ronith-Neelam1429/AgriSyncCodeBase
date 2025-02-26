@@ -12,7 +12,7 @@ class _EquipmentPageState extends State<EquipmentPage> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   RangeValues _priceRange = const RangeValues(0, 100000);
 
-  final List<String> filters = [
+  final List<String> filters = [ 
     'All',
     'New',
     'Used',
