@@ -6,7 +6,6 @@ import 'package:agrisync/App%20Pages/Core%20Pages/MarketPlace/NotificationModel.
 import 'package:agrisync/App%20Pages/Core%20Pages/MarketPlace/Pesticides/PesticidePage.dart';
 import 'package:agrisync/App%20Pages/Core%20Pages/MarketPlace/Seeds/SeedsPage.dart';
 import 'package:agrisync/App%20Pages/Core%20Pages/MarketPlace/Tools/ToolsPage.dart';
-// Import the notification model
 import 'package:flutter/material.dart';
 
 class MarketPlacePage extends StatefulWidget {
@@ -22,7 +21,6 @@ class _MarketPlacePageState extends State<MarketPlacePage> {
   // Flag to control notification panel visibility
   bool _showNotificationPanel = false;
 
-  // In MarketPlacePage's initState
   @override
   void initState() {
     super.initState();
@@ -274,226 +272,233 @@ class _MarketPlacePageState extends State<MarketPlacePage> {
   }
 
   Widget _buildNotificationPanel() {
-  // Filter to only show unread notifications
-  final unreadNotifications = notifications.where((n) => !n.isRead).toList();
-  
-  return Container(
-    width: 280,
-    constraints: const BoxConstraints(
-      maxHeight: 400,
-      minHeight: 100,
-    ),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(12),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withOpacity(0.1),
-          blurRadius: 10,
-          offset: const Offset(0, 5),
-        ),
-      ],
-    ),
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(12.0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                "Notifications",
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
-              if (unreadNotifications.isNotEmpty)
-                GestureDetector(
-                  onTap: _markAllAsRead,
-                  child: const Text(
-                    "Mark all as read",
-                    style: TextStyle(
-                      color: Colors.blue,
-                      fontSize: 12,
-                    ),
+    // Filter to only show unread notifications
+    final unreadNotifications = notifications.where((n) => !n.isRead).toList();
+
+    return Container(
+      width: 280,
+      constraints: const BoxConstraints(
+        maxHeight: 400,
+        minHeight: 100,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  "Notifications",
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
                   ),
                 ),
-            ],
+                if (unreadNotifications.isNotEmpty)
+                  GestureDetector(
+                    onTap: _markAllAsRead,
+                    child: const Text(
+                      "Mark all as read",
+                      style: TextStyle(
+                        color: Colors.blue,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           ),
-        ),
-        const Divider(height: 1),
-        unreadNotifications.isEmpty
-            ? Container(
-                padding: const EdgeInsets.all(16),
-                alignment: Alignment.center,
-                child: const Text(
-                  "No new notifications",
-                  style: TextStyle(color: Colors.grey),
-                ),
-              )
-            : Flexible(
-                child: ListView.builder(  // Changed from ListView.separated
-                  shrinkWrap: true,
-                  itemCount: unreadNotifications.length,
-                  itemBuilder: (context, index) {
-                    // Safely get the notification at this index
-                    if (index >= unreadNotifications.length) {
-                      return const SizedBox.shrink(); // Return empty widget for safety
-                    }
-                    
-                    final notification = unreadNotifications[index];
-                    Color categoryColor;
+          const Divider(height: 1),
+          unreadNotifications.isEmpty
+              ? Container(
+                  padding: const EdgeInsets.all(16),
+                  alignment: Alignment.center,
+                  child: const Text(
+                    "No new notifications",
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                )
+              : Flexible(
+                  child: ListView.builder(
+                    // Changed from ListView.separated
+                    shrinkWrap: true,
+                    itemCount: unreadNotifications.length,
+                    itemBuilder: (context, index) {
+                      // Safely get the notification at this index
+                      if (index >= unreadNotifications.length) {
+                        return const SizedBox
+                            .shrink(); // Return empty widget for safety
+                      }
 
-                    // Set color based on category
-                    switch (notification.list) {
-                      case 'Equipment':
-                        categoryColor = Colors.orange;
-                        break;
-                      case 'Seeds':
-                        categoryColor = Colors.green;
-                        break;
-                      case 'Fertilizers':
-                        categoryColor = Colors.blue;
-                        break;
-                      case 'Irrigation':
-                        categoryColor = Colors.lightBlue;
-                        break;
-                      case 'Pesticides':
-                        categoryColor = Colors.red;
-                        break;
-                      case 'Tools':
-                        categoryColor = Colors.brown;
-                        break;
-                      default:
-                        categoryColor = Colors.grey;
-                    }
+                      final notification = unreadNotifications[index];
+                      Color categoryColor;
 
-                    return Column(
-                      children: [
-                        if (index > 0) const Divider(height: 1),
-                        Container(
-                          color: notification.isRead
-                              ? Colors.white
-                              : (notification.isRecent
-                                  ? Colors.blue[100]
-                                  : Colors.blue[50]),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                                vertical: 8.0, horizontal: 12.0),
-                            child: Row(
-                              children: [
-                                // Product Image
-                                Container(
-                                  width: 50,
-                                  height: 50,
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(8),
-                                    color: Colors.grey[200],
-                                  ),
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(8),
-                                    child: Image.network(
-                                      notification.imageUrl,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (context, error, stackTrace) {
-                                        // Fallback icon if image fails to load
-                                        IconData iconData;
-                                        switch (notification.list) {
-                                          case 'Equipment':
-                                            iconData = Icons.agriculture;
-                                            break;
-                                          case 'Seeds':
-                                            iconData = Icons.grass;
-                                            break;
-                                          case 'Fertilizers':
-                                            iconData = Icons.science;
-                                            break;
-                                          case 'Irrigation':
-                                            iconData = Icons.water_drop;
-                                            break;
-                                          case 'Pesticides':
-                                            iconData = Icons.bug_report;
-                                            break;
-                                          case 'Tools':
-                                            iconData = Icons.handyman;
-                                            break;
-                                          default:
-                                            iconData = Icons.shopping_bag;
-                                        }
-                                        return Icon(
-                                          iconData,
-                                          color: categoryColor,
-                                          size: 30,
-                                        );
-                                      },
+                      // Set color based on category
+                      switch (notification.list) {
+                        case 'Equipment':
+                          categoryColor = Colors.orange;
+                          break;
+                        case 'Seeds':
+                          categoryColor = Colors.green;
+                          break;
+                        case 'Fertilizers':
+                          categoryColor = Colors.blue;
+                          break;
+                        case 'Irrigation':
+                          categoryColor = Colors.lightBlue;
+                          break;
+                        case 'Pesticides':
+                          categoryColor = Colors.red;
+                          break;
+                        case 'Tools':
+                          categoryColor = Colors.brown;
+                          break;
+                        default:
+                          categoryColor = Colors.grey;
+                      }
+
+                      return Column(
+                        children: [
+                          if (index > 0) const Divider(height: 1),
+                          Container(
+                            color: notification.isRead
+                                ? Colors.white
+                                : (notification.isRecent
+                                    ? Colors.blue[100]
+                                    : Colors.blue[50]),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: 8.0, horizontal: 12.0),
+                              child: Row(
+                                children: [
+                                  // Product Image
+                                  Container(
+                                    width: 50,
+                                    height: 50,
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(8),
+                                      color: Colors.grey[200],
+                                    ),
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(8),
+                                      child: Image.network(
+                                        notification.imageUrl,
+                                        fit: BoxFit.cover,
+                                        errorBuilder:
+                                            (context, error, stackTrace) {
+                                          // Fallback icon if image fails to load
+                                          IconData iconData;
+                                          switch (notification.list) {
+                                            case 'Equipment':
+                                              iconData = Icons.agriculture;
+                                              break;
+                                            case 'Seeds':
+                                              iconData = Icons.grass;
+                                              break;
+                                            case 'Fertilizers':
+                                              iconData = Icons.science;
+                                              break;
+                                            case 'Irrigation':
+                                              iconData = Icons.water_drop;
+                                              break;
+                                            case 'Pesticides':
+                                              iconData = Icons.bug_report;
+                                              break;
+                                            case 'Tools':
+                                              iconData = Icons.handyman;
+                                              break;
+                                            default:
+                                              iconData = Icons.shopping_bag;
+                                          }
+                                          return Icon(
+                                            iconData,
+                                            color: categoryColor,
+                                            size: 30,
+                                          );
+                                        },
+                                      ),
                                     ),
                                   ),
-                                ),
-                                const SizedBox(width: 12),
-                                // Product Info
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        notification.name,
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 14,
+                                  const SizedBox(width: 12),
+                                  // Product Info
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          notification.name,
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 14,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
                                         ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(
-                                                horizontal: 6, vertical: 2),
-                                            decoration: BoxDecoration(
-                                              color:
-                                                  categoryColor.withOpacity(0.1),
-                                              borderRadius:
-                                                  BorderRadius.circular(4),
-                                            ),
-                                            child: Text(
-                                              notification.list,
-                                              style: TextStyle(
-                                                fontSize: 10,
-                                                color: categoryColor,
-                                                fontWeight: FontWeight.bold,
+                                        const SizedBox(height: 4),
+                                        Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                      horizontal: 6,
+                                                      vertical: 2),
+                                              decoration: BoxDecoration(
+                                                color: categoryColor
+                                                    .withOpacity(0.1),
+                                                borderRadius:
+                                                    BorderRadius.circular(4),
+                                              ),
+                                              child: Text(
+                                                notification.list,
+                                                style: TextStyle(
+                                                  fontSize: 10,
+                                                  color: categoryColor,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
                                               ),
                                             ),
-                                          ),
-                                          Text(
-                                            "\$${notification.price.toStringAsFixed(2)}",
-                                            style: const TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 14,
+                                            Text(
+                                              "\$${notification.price.toStringAsFixed(2)}",
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 14,
+                                              ),
                                             ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
+                                          ],
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ),
-                        ),
-                      ],
-                    );
-                  },
+                        ],
+                      );
+                    },
+                  ),
                 ),
-              ),
-      ],
-    ),
-  );
-}
+        ],
+      ),
+    );
+  }
+
   Widget _buildCategoryCard(
       String title, String subtitle, IconData icon, Color color) {
     return Container(
