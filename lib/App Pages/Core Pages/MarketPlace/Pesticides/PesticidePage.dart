@@ -1,3 +1,4 @@
+import 'package:agrisync/App%20Pages/Core%20Pages/MarketPlace/ItemPage.dart';
 import 'package:agrisync/App%20Pages/Core%20Pages/MarketPlace/ListingModel.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -10,7 +11,8 @@ class PesticidesPage extends StatefulWidget {
 class _PesticidesPageState extends State<PesticidesPage> {
   String selectedFilter = 'All';
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  RangeValues _priceRange = const RangeValues(0, 10000); // Adjusted for pesticide pricing
+  RangeValues _priceRange =
+      const RangeValues(0, 10000); // Adjusted for pesticide pricing
 
   final List<String> filters = [
     'All',
@@ -23,7 +25,8 @@ class _PesticidesPageState extends State<PesticidesPage> {
 
   Stream<List<EquipmentListing>> getFilteredListings() {
     // Start with base query and add list filter
-    Query query = _firestore.collection('marketPlace')
+    Query query = _firestore
+        .collection('marketPlace')
         .where('list', isEqualTo: 'Pesticide');
 
     // Add condition filter if selected
@@ -33,7 +36,7 @@ class _PesticidesPageState extends State<PesticidesPage> {
 
     return query.snapshots().map((snapshot) {
       List<EquipmentListing> validListings = [];
-      
+
       for (var doc in snapshot.docs) {
         try {
           final data = doc.data() as Map<String, dynamic>;
@@ -44,7 +47,7 @@ class _PesticidesPageState extends State<PesticidesPage> {
           } else if (rawPrice is String) {
             price = double.tryParse(rawPrice) ?? 0.0;
           }
-          
+
           final listing = EquipmentListing(
             name: data['name'] as String? ?? '',
             price: price,
@@ -55,8 +58,9 @@ class _PesticidesPageState extends State<PesticidesPage> {
             retailURL: data['retailURL'] as String? ?? '',
             retailer: data['retailer'] as String? ?? '',
           );
-          
-          if (listing.price >= _priceRange.start && listing.price <= _priceRange.end) {
+
+          if (listing.price >= _priceRange.start &&
+              listing.price <= _priceRange.end) {
             validListings.add(listing);
           }
         } catch (e) {
@@ -64,7 +68,7 @@ class _PesticidesPageState extends State<PesticidesPage> {
           continue;
         }
       }
-      
+
       return validListings;
     });
   }
@@ -198,74 +202,84 @@ class _PesticidesPageState extends State<PesticidesPage> {
                   delegate: SliverChildBuilderDelegate(
                     (context, index) {
                       final listing = listings[index];
-                      return Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(8),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
-                              blurRadius: 4,
-                              offset: const Offset(0, 1),
+                      return GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ItemPage(item: listing),
                             ),
-                          ],
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            ClipRRect(
-                              borderRadius: const BorderRadius.vertical(
-                                top: Radius.circular(8),
+                          );
+                        },
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(8),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.05),
+                                blurRadius: 4,
+                                offset: const Offset(0, 1),
                               ),
-                              child: Image.network(
-                                listing.imageUrl,
-                                height: 120,
-                                width: double.infinity,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return Container(
-                                    height: 120,
-                                    color: Colors.grey[300],
-                                    child: const Icon(Icons.error),
-                                  );
-                                },
+                            ],
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              ClipRRect(
+                                borderRadius: const BorderRadius.vertical(
+                                  top: Radius.circular(8),
+                                ),
+                                child: Image.network(
+                                  listing.imageUrl,
+                                  height: 120,
+                                  width: double.infinity,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Container(
+                                      height: 120,
+                                      color: Colors.grey[300],
+                                      child: const Icon(Icons.error),
+                                    );
+                                  },
+                                ),
                               ),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    listing.name,
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold,
+                              Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      listing.name,
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    '\$${listing.price.toStringAsFixed(2)}',
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      color: Colors.orange,
-                                      fontWeight: FontWeight.bold,
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      '\$${listing.price.toStringAsFixed(2)}',
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        color: Colors.orange,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    listing.condition,
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey[600],
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      listing.condition,
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey[600],
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       );
                     },

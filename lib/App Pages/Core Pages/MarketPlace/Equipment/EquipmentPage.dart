@@ -1,3 +1,4 @@
+import 'package:agrisync/App%20Pages/Core%20Pages/MarketPlace/ItemPage.dart';
 import 'package:agrisync/App%20Pages/Core%20Pages/MarketPlace/ListingModel.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -12,7 +13,7 @@ class _EquipmentPageState extends State<EquipmentPage> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   RangeValues _priceRange = const RangeValues(0, 100000);
 
-  final List<String> filters = [ 
+  final List<String> filters = [
     'All',
     'New',
     'Used',
@@ -22,52 +23,54 @@ class _EquipmentPageState extends State<EquipmentPage> {
   ];
 
   Stream<List<EquipmentListing>> getFilteredListings() {
-  // Start with base query and add list filter
-  Query query = _firestore.collection('marketPlace')
-      .where('list', isEqualTo: 'Equipment');
+    // Start with base query and add list filter
+    Query query = _firestore
+        .collection('marketPlace')
+        .where('list', isEqualTo: 'Equipment');
 
-  // Add condition filter if selected
-  if (selectedFilter != 'All') {
-    query = query.where('condition', isEqualTo: selectedFilter);
-  }
-
-  return query.snapshots().map((snapshot) {
-    List<EquipmentListing> validListings = [];
-    
-    for (var doc in snapshot.docs) {
-      try {
-        final data = doc.data() as Map<String, dynamic>;
-        double price = 0.0;
-        var rawPrice = data['price'];
-        if (rawPrice is num) {
-          price = rawPrice.toDouble();
-        } else if (rawPrice is String) {
-          price = double.tryParse(rawPrice) ?? 0.0;
-        }
-        
-        final listing = EquipmentListing(
-          name: data['name'] as String? ?? '',
-          price: price,
-          condition: data['condition'] as String? ?? '',
-          imageUrl: data['imageURL'] as String? ?? '',
-          list: data['list'] as String? ?? '',
-          category: data['category'] as String? ?? '',
-          retailURL: data['retailURL'] as String? ?? '',
-          retailer: data['retailer'] as String? ?? '',
-        );
-        
-        if (listing.price >= _priceRange.start && listing.price <= _priceRange.end) {
-          validListings.add(listing);
-        }
-      } catch (e) {
-        print('Error parsing document ${doc.id}: $e');
-        continue;
-      }
+    // Add condition filter if selected
+    if (selectedFilter != 'All') {
+      query = query.where('condition', isEqualTo: selectedFilter);
     }
-    
-    return validListings;
-  });
-}
+
+    return query.snapshots().map((snapshot) {
+      List<EquipmentListing> validListings = [];
+
+      for (var doc in snapshot.docs) {
+        try {
+          final data = doc.data() as Map<String, dynamic>;
+          double price = 0.0;
+          var rawPrice = data['price'];
+          if (rawPrice is num) {
+            price = rawPrice.toDouble();
+          } else if (rawPrice is String) {
+            price = double.tryParse(rawPrice) ?? 0.0;
+          }
+
+          final listing = EquipmentListing(
+            name: data['name'] as String? ?? '',
+            price: price,
+            condition: data['condition'] as String? ?? '',
+            imageUrl: data['imageURL'] as String? ?? '',
+            list: data['list'] as String? ?? '',
+            category: data['category'] as String? ?? '',
+            retailURL: data['retailURL'] as String? ?? '',
+            retailer: data['retailer'] as String? ?? '',
+          );
+
+          if (listing.price >= _priceRange.start &&
+              listing.price <= _priceRange.end) {
+            validListings.add(listing);
+          }
+        } catch (e) {
+          print('Error parsing document ${doc.id}: $e');
+          continue;
+        }
+      }
+
+      return validListings;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -198,74 +201,84 @@ class _EquipmentPageState extends State<EquipmentPage> {
                   delegate: SliverChildBuilderDelegate(
                     (context, index) {
                       final listing = listings[index];
-                      return Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(8),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
-                              blurRadius: 4,
-                              offset: const Offset(0, 1),
+                      return GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ItemPage(item: listing),
                             ),
-                          ],
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            ClipRRect(
-                              borderRadius: const BorderRadius.vertical(
-                                top: Radius.circular(8),
+                          );
+                        },
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(8),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.05),
+                                blurRadius: 4,
+                                offset: const Offset(0, 1),
                               ),
-                              child: Image.network(
-                                listing.imageUrl,
-                                height: 120,
-                                width: double.infinity,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return Container(
-                                    height: 120,
-                                    color: Colors.grey[300],
-                                    child: const Icon(Icons.error),
-                                  );
-                                },
+                            ],
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              ClipRRect(
+                                borderRadius: const BorderRadius.vertical(
+                                  top: Radius.circular(8),
+                                ),
+                                child: Image.network(
+                                  listing.imageUrl,
+                                  height: 120,
+                                  width: double.infinity,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Container(
+                                      height: 120,
+                                      color: Colors.grey[300],
+                                      child: const Icon(Icons.error),
+                                    );
+                                  },
+                                ),
                               ),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    listing.name,
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold,
+                              Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      listing.name,
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    '\$${listing.price.toStringAsFixed(2)}',
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      color: Colors.green,
-                                      fontWeight: FontWeight.bold,
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      '\$${listing.price.toStringAsFixed(2)}',
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        color: Colors.green,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    listing.condition,
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey[600],
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      listing.condition,
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey[600],
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       );
                     },
