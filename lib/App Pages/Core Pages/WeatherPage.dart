@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'dart:math'; // Added this import for Random
 import 'package:intl/intl.dart';
 import 'package:agrisync/App%20Pages/Core%20Pages/Weather%20Components/LocationService.dart';
+import 'package:flutter/animation.dart';
 
 class WeatherPage extends StatefulWidget {
   const WeatherPage({super.key});
@@ -11,7 +13,9 @@ class WeatherPage extends StatefulWidget {
   State<WeatherPage> createState() => _WeatherPageState();
 }
 
-class _WeatherPageState extends State<WeatherPage> {
+class _WeatherPageState extends State<WeatherPage> with SingleTickerProviderStateMixin {
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
   final String apiKey = 'eeaca43a04ac307588b75ac98f9871d7';
   String selectedUnit = 'Celsius';
   Map<String, dynamic>? currentWeather;
@@ -24,7 +28,21 @@ class _WeatherPageState extends State<WeatherPage> {
   @override
   void initState() {
     super.initState();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
+    _animationController.forward();
     _initializeLocation();
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
   }
 
   Future<void> _initializeLocation() async {
@@ -38,7 +56,6 @@ class _WeatherPageState extends State<WeatherPage> {
         });
         await fetchWeatherData();
       } else {
-        // Default to London if location service fails
         setState(() {
           userCity = 'London';
           userLat = '51.5074';
@@ -48,7 +65,6 @@ class _WeatherPageState extends State<WeatherPage> {
       }
     } catch (e) {
       print('Error getting location: $e');
-      // Default to London if location service fails
       setState(() {
         userCity = 'London';
         userLat = '51.5074';
@@ -60,7 +76,6 @@ class _WeatherPageState extends State<WeatherPage> {
 
   Future<void> fetchWeatherData() async {
     try {
-      // Use coordinates for more accurate weather data
       final currentUrl =
           'https://api.openweathermap.org/data/2.5/weather?lat=$userLat&lon=$userLon&appid=$apiKey&units=metric';
       final currentResponse = await http.get(Uri.parse(currentUrl));
@@ -87,7 +102,6 @@ class _WeatherPageState extends State<WeatherPage> {
   }
 
   List<Map<String, dynamic>> _processForecastData(List<dynamic> forecastList) {
-    // Get one forecast per day for the next 4 days
     Map<String, dynamic> dailyForecasts = {};
     DateTime now = DateTime.now();
 
@@ -96,7 +110,6 @@ class _WeatherPageState extends State<WeatherPage> {
           DateTime.fromMillisecondsSinceEpoch(forecast['dt'] * 1000);
       String date = DateFormat('yyyy-MM-dd').format(forecastDate);
 
-      // Skip today's forecast
       if (forecastDate.difference(now).inDays == 0) continue;
 
       if (!dailyForecasts.containsKey(date)) {
@@ -119,7 +132,6 @@ class _WeatherPageState extends State<WeatherPage> {
   }
 
   String _getAdditionalAdvice(List<Map<String, dynamic>> forecastData) {
-    // Check if any of the next few days have rain
     bool hasRain = forecastData.any((day) =>
         day['weather'][0]['main'].toString().toLowerCase().contains('rain'));
 
@@ -195,58 +207,121 @@ class _WeatherPageState extends State<WeatherPage> {
     }
   }
 
+  Color _getDynamicColor() {
+    if (currentWeather == null) return const Color.fromARGB(255, 27, 94, 32);
+    final weatherMain = currentWeather!['weather'][0]['main'].toString().toLowerCase();
+    final temp = currentWeather!['main']['temp'];
+    if (weatherMain.contains('rain')) return Colors.blue[700]!;
+    if (weatherMain.contains('cloud') || temp < 15) return Colors.grey[700]!;
+    if (temp > 25) return Colors.yellow[700]!;
+    return const Color.fromARGB(255, 87, 189, 179);
+  }
+
   Widget _buildCurrentWeather() {
     if (currentWeather == null) return const SizedBox();
 
-    final temp =
-        _convertTemperature(currentWeather!['main']['temp'].toDouble());
+    final temp = _convertTemperature(currentWeather!['main']['temp'].toDouble());
+    final weatherMain = currentWeather!['weather'][0]['main'].toLowerCase();
     final advice = _getWeatherAdvice(currentWeather!);
-    final additionalAdvice =
-        forecast != null ? _getAdditionalAdvice(forecast!) : '';
+    final additionalAdvice = forecast != null ? _getAdditionalAdvice(forecast!) : '';
 
-    return Container(
-      padding: const EdgeInsets.all(16),
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 500),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.blue[400],
-        borderRadius: BorderRadius.circular(15),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '$userCity, ${DateFormat('d MMM yyyy').format(DateTime.now())}',
-            style: const TextStyle(color: Colors.white),
+        color: _getDynamicColor(),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black26,
+            blurRadius: 15,
+            offset: const Offset(0, 8),
           ),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        ],
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            _getDynamicColor().withOpacity(0.9),
+            _getDynamicColor().withOpacity(0.6),
+          ],
+        ),
+      ),
+      child: Stack(
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                '${temp.round()}${_getTemperatureUnit()}',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    '$userCity, ${DateFormat('d MMM yyyy').format(DateTime.now())}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  if (weatherMain.contains('clear') || temp > 25)
+                    const Icon(
+                      Icons.wb_sunny,
+                      color: Colors.yellow,
+                      size: 30,
+                    ),
+                ],
               ),
+              const SizedBox(height: 10),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    '${temp.round()}${_getTemperatureUnit()}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 60,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    weatherMain,
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'Humidity ${currentWeather!['main']['humidity']}%',
+                style: const TextStyle(color: Colors.white70),
+              ),
+              const Divider(color: Colors.white24, thickness: 1),
+              const SizedBox(height: 10),
+              Text(
+                advice,
+                style: const TextStyle(color: Colors.white),
+              ),
+              if (additionalAdvice.isNotEmpty)
+                Column(
+                  children: [
+                    const SizedBox(height: 10),
+                    Text(
+                      additionalAdvice,
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                  ],
+                ),
             ],
           ),
-          Text(
-            'Humidity ${currentWeather!['main']['humidity']}%',
-            style: const TextStyle(color: Colors.white),
-          ),
-          const Divider(color: Colors.white),
-          Text(
-            advice,
-            style: const TextStyle(color: Colors.white),
-          ),
-          if (additionalAdvice.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Text(
-              additionalAdvice,
-              style: const TextStyle(color: Colors.white),
+          if (weatherMain.contains('rain'))
+            Positioned.fill(
+              child: CustomPaint(
+                painter: RainPainter(),
+              ),
             ),
-          ],
         ],
       ),
     );
@@ -255,121 +330,58 @@ class _WeatherPageState extends State<WeatherPage> {
   Widget _buildForecastCard(Map<String, dynamic> dayForecast) {
     final date = DateTime.fromMillisecondsSinceEpoch(dayForecast['dt'] * 1000);
     final temp = _convertTemperature(dayForecast['main']['temp'].toDouble());
+    final weatherMain = dayForecast['weather'][0]['main'].toLowerCase();
 
-    return Container(
-      width: 120,
-      padding: const EdgeInsets.all(16),
-      margin: const EdgeInsets.only(right: 16),
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 500),
+      width: 90,
+      height: 150,
+      padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.only(right: 12),
       decoration: BoxDecoration(
-        color: Colors.blue[300],
+        color: _getDynamicColor(),
         borderRadius: BorderRadius.circular(15),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.2),
-            spreadRadius: 2,
-            blurRadius: 5,
+            color: Colors.black26,
+            blurRadius: 10,
+            offset: const Offset(0, 5),
           ),
         ],
       ),
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
-            DateFormat('EEEE').format(date),
+            DateFormat('EEE').format(date),
             style: const TextStyle(
               color: Colors.white,
-              fontWeight: FontWeight.bold,
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
             ),
           ),
-          const SizedBox(height: 8),
           Icon(
-            dayForecast['weather'][0]['main']
-                    .toString()
-                    .toLowerCase()
-                    .contains('rain')
+            weatherMain.contains('rain')
                 ? Icons.water_drop
-                : Icons.wb_sunny,
-            size: 32,
+                : weatherMain.contains('cloud')
+                    ? Icons.cloud
+                    : Icons.wb_sunny,
             color: Colors.white,
+            size: 30,
           ),
-          const SizedBox(height: 8),
           Text(
             '${temp.round()}${_getTemperatureUnit()}',
             style: const TextStyle(
-              fontSize: 24,
               color: Colors.white,
+              fontSize: 20,
               fontWeight: FontWeight.bold,
             ),
           ),
           Text(
-            'Humidity ${dayForecast['main']['humidity']}%',
-            style: const TextStyle(color: Colors.white),
+            'Hum ${dayForecast['main']['humidity']}%',
+            style: const TextStyle(color: Colors.white70),
           ),
         ],
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (isLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
-    }
-
-    return Scaffold(
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Today\'s Weather',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  PopupMenuButton(
-                    icon: const Icon(Icons.more_vert,
-                        color: Color.fromARGB(255, 0, 0, 0)),
-                    itemBuilder: (context) => [
-                      PopupMenuItem(
-                        child: _buildUnitSelector(),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              _buildCurrentWeather(),
-              const SizedBox(height: 24),
-              const Text(
-                'Next 4 Days',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 16),
-              if (forecast != null)
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: forecast!
-                        .map((forecast) => _buildForecastCard(forecast))
-                        .toList(),
-                  ),
-                ),
-              const SizedBox(height: 16),
-              _buildAdditionalWeatherStats(),
-            ],
-          ),
-        ),
       ),
     );
   }
@@ -394,102 +406,143 @@ class _WeatherPageState extends State<WeatherPage> {
         const Text(
           'Additional Weather Stats',
           style: TextStyle(
-            fontSize: 18,
+            fontSize: 20,
+            color: Colors.white,
             fontWeight: FontWeight.bold,
           ),
         ),
         const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.blue[100],
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text('Wind Speed'),
-              Text('$windSpeed m/s'),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.blue[100],
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text('Wind Direction'),
-              Text('$windDirection°'),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.blue[100],
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text('Pressure'),
-              Text('$pressure hPa'),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.blue[100],
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text('Visibility'),
-              Text('${visibility.toStringAsFixed(1)} km'),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.blue[100],
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text('Sunrise'),
-              Text(DateFormat('HH:mm').format(sunrise)),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.blue[100],
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text('Sunset'),
-              Text(DateFormat('HH:mm').format(sunset)),
-            ],
-          ),
-        ),
+        _buildStatCard('Wind Speed', '$windSpeed m/s'),
+        _buildStatCard('Wind Direction', '$windDirection°'),
+        _buildStatCard('Pressure', '$pressure hPa'),
+        _buildStatCard('Visibility', '${visibility.toStringAsFixed(1)} km'),
+        _buildStatCard('Sunrise', DateFormat('HH:mm').format(sunrise)),
+        _buildStatCard('Sunset', DateFormat('HH:mm').format(sunset)),
         const SizedBox(height: 80),
       ],
     );
   }
+
+  Widget _buildStatCard(String label, String value) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color.fromARGB(255, 39, 39, 39),
+        borderRadius: BorderRadius.circular(15),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black26,
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(color: Colors.white70, fontSize: 16),
+          ),
+          Text(
+            value,
+            style: const TextStyle(color: Colors.white, fontSize: 16),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Today\'s Weather',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  PopupMenuButton(
+                    icon: const Icon(Icons.more_vert, color: Colors.white),
+                    itemBuilder: (context) => [
+                      PopupMenuItem(
+                        child: _buildUnitSelector(),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              _buildCurrentWeather(),
+              const SizedBox(height: 24),
+              const Text(
+                'Next 4 Days',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 16),
+              if (forecast != null)
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: forecast!
+                        .map((forecast) => _buildForecastCard(forecast))
+                        .toList(),
+                  ),
+                ),
+              const SizedBox(height: 24),
+              _buildAdditionalWeatherStats(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class RainPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.white.withOpacity(0.7)
+      ..strokeWidth = 1.0
+      ..style = PaintingStyle.stroke;
+
+    final random = Random(); // Now works with the dart:math import
+    for (int i = 0; i < 20; i++) {
+      double startX = random.nextDouble() * size.width;
+      double startY = random.nextDouble() * size.height;
+      double endY = startY + 10 + random.nextDouble() * 20;
+      canvas.drawLine(
+        Offset(startX, startY),
+        Offset(startX, endY > size.height ? size.height : endY),
+        paint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
