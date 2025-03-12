@@ -1,7 +1,8 @@
-import 'package:agrisync/App%20Pages/HomePage.dart';
-import 'package:agrisync/App%20Pages/Core%20Pages/ProfilePage.dart';
-import 'package:agrisync/App%20Pages/Core%20Pages/WeatherPage.dart';
-import 'package:agrisync/App%20Pages/Core%20Pages/MarketPage.dart';
+import 'package:agrisync/App Pages/HomePage.dart';
+import 'package:agrisync/App Pages/Core Pages/ProfilePage.dart';
+import 'package:agrisync/App Pages/Core Pages/WeatherPage.dart';
+import 'package:agrisync/App Pages/Core Pages/MarketPage.dart';
+import 'package:agrisync/Authentication/Pages/forum_page.dart';
 import 'package:flutter/material.dart';
 import 'package:curved_navigation_bar/curved_navigation_bar.dart';
 
@@ -19,6 +20,7 @@ class _HomePageWithNavBarState extends State<HomePageWithNavBar> {
     const WeatherPage(),
     const MarketPlacePage(),
     const ProfilePage(),
+    const ForumPage(),
   ];
 
   @override
@@ -36,21 +38,17 @@ class _HomePageWithNavBarState extends State<HomePageWithNavBar> {
             end: Alignment.centerRight,
           ),
         ),
-
-        //Making our bottom navigation bar (container) have
-        //A curved navigation bar as it's object
         child: CurvedNavigationBar(
           height: 65,
           backgroundColor: const Color.fromARGB(0, 0, 0, 0),
           color: Colors.transparent,
           buttonBackgroundColor: const Color.fromARGB(255, 87, 189, 179),
-
-          //Creating the icons/images for each picture and assigning their pages to them
           items: const <Widget>[
             Icon(Icons.home, size: 30, color: Colors.white),
             Icon(Icons.cloud, size: 30, color: Colors.white),
             Icon(Icons.shopping_cart, size: 30, color: Colors.white),
             Icon(Icons.person, size: 30, color: Colors.white),
+            Icon(Icons.forum, size: 30, color: Colors.white),
           ],
           onTap: (index) {
             setState(() {
