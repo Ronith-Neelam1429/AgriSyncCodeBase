@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+
 class RegisterPage extends StatefulWidget {
   const RegisterPage({Key? key}) : super(key: key);
 
@@ -118,7 +119,7 @@ class _RegisterPageState extends State<RegisterPage> {
     if (mounted) {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => HomePageWithNavBar()),
+        MaterialPageRoute(builder: (context) => CustomNavBar()),
       );
     }
 
@@ -337,7 +338,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   if (userCredential != null && mounted) {
                     Navigator.pushReplacement(
                       context,
-                      MaterialPageRoute(builder: (context) => const HomePageWithNavBar()),
+                      MaterialPageRoute(builder: (context) => const CustomNavBar()),
                     );
                   }
                 } catch (e) {

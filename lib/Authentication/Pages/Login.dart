@@ -77,7 +77,7 @@ class _LoginPageState extends State<LoginPage> {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => const HomePageWithNavBar(),
+            builder: (context) => const CustomNavBar(),
           ),
         );
       }
@@ -92,7 +92,7 @@ class _LoginPageState extends State<LoginPage> {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => const HomePageWithNavBar(),
+            builder: (context) => const CustomNavBar(),
           ),
         );
       } else {
@@ -280,7 +280,7 @@ class _LoginPageState extends State<LoginPage> {
                   if (userCredential != null && mounted) {
                     Navigator.pushReplacement(
                       context,
-                      MaterialPageRoute(builder: (context) => const HomePageWithNavBar()),
+                      MaterialPageRoute(builder: (context) => const CustomNavBar()),
                     );
                   }
                 } catch (e, stackTrace) {
