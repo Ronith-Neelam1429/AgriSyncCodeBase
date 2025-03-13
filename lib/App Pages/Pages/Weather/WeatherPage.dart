@@ -214,7 +214,8 @@ class _WeatherPageState extends State<WeatherPage>
         currentWeather!['weather'][0]['main'].toString().toLowerCase();
     final temp = currentWeather!['main']['temp'];
     if (weatherMain.contains('rain')) return Colors.blue[700]!;
-    if (weatherMain.contains('cloud') || temp < 15) return Colors.grey[700]!;
+    if (weatherMain.contains('cloud') || temp < 15)
+      return const Color.fromARGB(255, 152, 152, 152)!;
     if (temp > 25) return Colors.yellow[700]!;
     return const Color.fromARGB(255, 87, 189, 179);
   }

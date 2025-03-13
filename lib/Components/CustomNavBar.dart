@@ -1,6 +1,6 @@
 import 'package:agrisync/App Pages/HomePage.dart';
 import 'package:agrisync/App%20Pages/Pages/MarketPlace/MarketPage.dart';
-import 'package:agrisync/App%20Pages/Pages/Profile/ProfilePage.dart';
+import 'package:agrisync/App%20Pages/Pages/ProfilePage/ProfilePage.dart';
 import 'package:agrisync/App%20Pages/Pages/Weather/WeatherPage.dart';
 import 'package:agrisync/App%20Pages/Pages/Analytics/YieldForecastPage.dart';
 import 'package:agrisync/App%20Pages/Pages/Analytics/AIChatbotPage.dart'; 
@@ -17,7 +17,7 @@ class CustomNavBar extends StatefulWidget {
 class _CustomNavBarState extends State<CustomNavBar> {
   int _currentIndex = 0;
   final List<Widget> _pages = [
-    const HomePage(),
+    HomePage(),
     const WeatherPage(),
     const MarketPlacePage(),
     const ProfilePage(),
