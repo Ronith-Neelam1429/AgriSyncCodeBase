@@ -1,11 +1,11 @@
-import 'package:agrisync/App%20Pages/Core%20Pages/MarketPlace/DatabaseService.dart';
-import 'package:agrisync/App%20Pages/Core%20Pages/MarketPlace/Equipment/EquipmentPage.dart';
-import 'package:agrisync/App%20Pages/Core%20Pages/MarketPlace/Fertilizers/FertilizerPage.dart';
-import 'package:agrisync/App%20Pages/Core%20Pages/MarketPlace/Irrigation/IrrigationPage.dart';
-import 'package:agrisync/App%20Pages/Core%20Pages/MarketPlace/NotificationModel.dart';
-import 'package:agrisync/App%20Pages/Core%20Pages/MarketPlace/Pesticides/PesticidePage.dart';
-import 'package:agrisync/App%20Pages/Core%20Pages/MarketPlace/Seeds/SeedsPage.dart';
-import 'package:agrisync/App%20Pages/Core%20Pages/MarketPlace/Tools/ToolsPage.dart';
+import 'package:agrisync/App%20Pages/Pages/MarketPlace/DatabaseService.dart';
+import 'package:agrisync/App%20Pages/Pages/MarketPlace/Equipment/EquipmentPage.dart';
+import 'package:agrisync/App%20Pages/Pages/MarketPlace/Fertilizers/FertilizerPage.dart';
+import 'package:agrisync/App%20Pages/Pages/MarketPlace/Irrigation/IrrigationPage.dart';
+import 'package:agrisync/App%20Pages/Pages/MarketPlace/NotificationModel.dart';
+import 'package:agrisync/App%20Pages/Pages/MarketPlace/Pesticides/PesticidePage.dart';
+import 'package:agrisync/App%20Pages/Pages/MarketPlace/Seeds/SeedsPage.dart';
+import 'package:agrisync/App%20Pages/Pages/MarketPlace/Tools/ToolsPage.dart';
 import 'package:flutter/material.dart';
 
 class MarketPlacePage extends StatefulWidget {

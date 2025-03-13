@@ -1,32 +1,32 @@
-import 'package:agrisync/App%20Pages/Core%20Pages/MarketPlace/ItemPage.dart';
-import 'package:agrisync/App%20Pages/Core%20Pages/MarketPlace/ListingModel.dart';
+import 'package:agrisync/App%20Pages/Pages/MarketPlace/ItemPage.dart';
+import 'package:agrisync/App%20Pages/Pages/MarketPlace/ListingModel.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
-class ToolsPage extends StatefulWidget {
+class SeedsPage extends StatefulWidget {
   @override
-  _ToolsPageState createState() => _ToolsPageState();
+  _SeedsPageState createState() => _SeedsPageState();
 }
 
-class _ToolsPageState extends State<ToolsPage> {
+class _SeedsPageState extends State<SeedsPage> {
   String selectedFilter = 'All';
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   RangeValues _priceRange =
-      const RangeValues(0, 1000000); // Adjusted for tools pricing
+      const RangeValues(0, 1000); // Adjusted for seeds pricing
 
   final List<String> filters = [
     'All',
-    'Hand Tools',
-    'Power Tools',
     'New',
-    'Used',
-    'On Sale'
+    'Organic',
+    'On Sale',
+    'Featured',
+    'Local'
   ];
 
   Stream<List<EquipmentListing>> getFilteredListings() {
     // Start with base query and add list filter
     Query query =
-        _firestore.collection('marketPlace').where('list', isEqualTo: 'Tools');
+        _firestore.collection('marketPlace').where('list', isEqualTo: 'Seeds');
 
     // Add condition filter if selected
     if (selectedFilter != 'All') {
@@ -80,7 +80,7 @@ class _ToolsPageState extends State<ToolsPage> {
         slivers: [
           // App Bar
           SliverAppBar(
-            title: const Text('Tools & Equipment'),
+            title: const Text('Seeds'),
             backgroundColor: Colors.white,
             elevation: 0,
             floating: true,
@@ -104,7 +104,7 @@ class _ToolsPageState extends State<ToolsPage> {
                 ),
                 child: TextField(
                   decoration: InputDecoration(
-                    hintText: 'Search tools and equipment...',
+                    hintText: 'Search seeds...',
                     prefixIcon: const Icon(Icons.search),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -140,18 +140,18 @@ class _ToolsPageState extends State<ToolsPage> {
                           });
                         },
                         backgroundColor: Colors.white,
-                        selectedColor: Colors.grey.shade300,
-                        checkmarkColor: Colors.grey.shade800,
+                        selectedColor: Colors.green.shade100,
+                        checkmarkColor: Colors.green.shade800,
                         labelStyle: TextStyle(
                           color: selectedFilter == filters[index]
-                              ? Colors.grey.shade800
+                              ? Colors.green.shade800
                               : Colors.black87,
                         ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(20),
                           side: BorderSide(
                             color: selectedFilter == filters[index]
-                                ? Colors.grey.shade800
+                                ? Colors.green.shade800
                                 : Colors.grey.shade300,
                           ),
                         ),
@@ -262,7 +262,7 @@ class _ToolsPageState extends State<ToolsPage> {
                                       '\$${listing.price.toStringAsFixed(2)}',
                                       style: const TextStyle(
                                         fontSize: 16,
-                                        color: Colors.black87,
+                                        color: Colors.green,
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),

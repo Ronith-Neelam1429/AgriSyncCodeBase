@@ -1,22 +1,23 @@
-import 'package:agrisync/App%20Pages/Core%20Pages/MarketPlace/ItemPage.dart';
-import 'package:agrisync/App%20Pages/Core%20Pages/MarketPlace/ListingModel.dart';
+import 'package:agrisync/App%20Pages/Pages/MarketPlace/ItemPage.dart';
+import 'package:agrisync/App%20Pages/Pages/MarketPlace/ListingModel.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
-class EquipmentPage extends StatefulWidget {
+class FertilizersPage extends StatefulWidget {
   @override
-  _EquipmentPageState createState() => _EquipmentPageState();
+  _FertilizersPageState createState() => _FertilizersPageState();
 }
 
-class _EquipmentPageState extends State<EquipmentPage> {
+class _FertilizersPageState extends State<FertilizersPage> {
   String selectedFilter = 'All';
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  RangeValues _priceRange = const RangeValues(0, 100000);
+  RangeValues _priceRange =
+      const RangeValues(0, 500); // Adjusted for fertilizer pricing
 
   final List<String> filters = [
     'All',
-    'New',
-    'Used',
+    'Organic',
+    'Chemical',
     'On Sale',
     'Featured',
     'Local'
@@ -26,7 +27,7 @@ class _EquipmentPageState extends State<EquipmentPage> {
     // Start with base query and add list filter
     Query query = _firestore
         .collection('marketPlace')
-        .where('list', isEqualTo: 'Equipment');
+        .where('list', isEqualTo: 'Fertilizer');
 
     // Add condition filter if selected
     if (selectedFilter != 'All') {
@@ -80,7 +81,7 @@ class _EquipmentPageState extends State<EquipmentPage> {
         slivers: [
           // App Bar
           SliverAppBar(
-            title: const Text('Equipment'),
+            title: const Text('Fertilizers'),
             backgroundColor: Colors.white,
             elevation: 0,
             floating: true,
@@ -104,7 +105,7 @@ class _EquipmentPageState extends State<EquipmentPage> {
                 ),
                 child: TextField(
                   decoration: InputDecoration(
-                    hintText: 'Search equipment...',
+                    hintText: 'Search fertilizers...',
                     prefixIcon: const Icon(Icons.search),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),

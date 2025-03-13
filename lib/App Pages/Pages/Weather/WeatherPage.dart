@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:math'; // Added this import for Random
 import 'package:intl/intl.dart';
-import 'package:agrisync/App%20Pages/Core%20Pages/Weather/LocationService.dart';
+import 'package:agrisync/App%20Pages/Pages/Weather/LocationService.dart';
 import 'package:flutter/animation.dart';
 
 class WeatherPage extends StatefulWidget {

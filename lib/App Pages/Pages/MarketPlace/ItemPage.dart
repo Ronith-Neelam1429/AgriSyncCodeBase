@@ -1,4 +1,4 @@
-import 'package:agrisync/App%20Pages/Core%20Pages/MarketPlace/ListingModel.dart';
+import 'package:agrisync/App%20Pages/Pages/MarketPlace/ListingModel.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 

@@ -1,6 +1,6 @@
 import 'dart:async';
-import 'package:agrisync/App%20Pages/Core%20Pages/MarketPlace/ListingModel.dart';
-import 'package:agrisync/App%20Pages/Core%20Pages/MarketPlace/NotificationModel.dart';
+import 'package:agrisync/App%20Pages/Pages/MarketPlace/ListingModel.dart';
+import 'package:agrisync/App%20Pages/Pages/MarketPlace/NotificationModel.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
