@@ -1,4 +1,4 @@
-import 'package:agrisync/App%20Pages/Core%20Pages/Weather%20Components/WeatherIcons.dart';
+import 'package:agrisync/App%20Pages/Core%20Pages/Weather/WeatherIcons.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';

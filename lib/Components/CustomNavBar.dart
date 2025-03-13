@@ -1,9 +1,9 @@
 import 'package:agrisync/App Pages/HomePage.dart';
-import 'package:agrisync/App Pages/Core Pages/MarketPage.dart';
-import 'package:agrisync/App Pages/Core Pages/ProfilePage.dart';
-import 'package:agrisync/App Pages/Core Pages/WeatherPage.dart';
-import 'package:agrisync/App Pages/Core Pages/YieldForecastPage.dart';
-import 'package:agrisync/App Pages/Core Pages/AIChatbotPage.dart'; 
+import 'package:agrisync/App%20Pages/Core%20Pages/MarketPlace/MarketPage.dart';
+import 'package:agrisync/App%20Pages/Core%20Pages/Profile/ProfilePage.dart';
+import 'package:agrisync/App%20Pages/Core%20Pages/Weather/WeatherPage.dart';
+import 'package:agrisync/App%20Pages/Core%20Pages/Analytics/YieldForecastPage.dart';
+import 'package:agrisync/App%20Pages/Core%20Pages/Analytics/AIChatbotPage.dart'; 
 import 'package:flutter/material.dart';
 import 'package:curved_navigation_bar/curved_navigation_bar.dart';
 
