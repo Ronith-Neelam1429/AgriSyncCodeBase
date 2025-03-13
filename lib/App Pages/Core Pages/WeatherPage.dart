@@ -13,7 +13,8 @@ class WeatherPage extends StatefulWidget {
   State<WeatherPage> createState() => _WeatherPageState();
 }
 
-class _WeatherPageState extends State<WeatherPage> with SingleTickerProviderStateMixin {
+class _WeatherPageState extends State<WeatherPage>
+    with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   final String apiKey = 'eeaca43a04ac307588b75ac98f9871d7';
@@ -209,7 +210,8 @@ class _WeatherPageState extends State<WeatherPage> with SingleTickerProviderStat
 
   Color _getDynamicColor() {
     if (currentWeather == null) return const Color.fromARGB(255, 27, 94, 32);
-    final weatherMain = currentWeather!['weather'][0]['main'].toString().toLowerCase();
+    final weatherMain =
+        currentWeather!['weather'][0]['main'].toString().toLowerCase();
     final temp = currentWeather!['main']['temp'];
     if (weatherMain.contains('rain')) return Colors.blue[700]!;
     if (weatherMain.contains('cloud') || temp < 15) return Colors.grey[700]!;
@@ -220,10 +222,12 @@ class _WeatherPageState extends State<WeatherPage> with SingleTickerProviderStat
   Widget _buildCurrentWeather() {
     if (currentWeather == null) return const SizedBox();
 
-    final temp = _convertTemperature(currentWeather!['main']['temp'].toDouble());
+    final temp =
+        _convertTemperature(currentWeather!['main']['temp'].toDouble());
     final weatherMain = currentWeather!['weather'][0]['main'].toLowerCase();
     final advice = _getWeatherAdvice(currentWeather!);
-    final additionalAdvice = forecast != null ? _getAdditionalAdvice(forecast!) : '';
+    final additionalAdvice =
+        forecast != null ? _getAdditionalAdvice(forecast!) : '';
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 500),
@@ -407,7 +411,7 @@ class _WeatherPageState extends State<WeatherPage> with SingleTickerProviderStat
           'Additional Weather Stats',
           style: TextStyle(
             fontSize: 20,
-            color: Colors.white,
+            color: Color.fromARGB(255, 0, 0, 0),
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -463,7 +467,7 @@ class _WeatherPageState extends State<WeatherPage> with SingleTickerProviderStat
     }
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
@@ -478,7 +482,7 @@ class _WeatherPageState extends State<WeatherPage> with SingleTickerProviderStat
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: Color.fromARGB(255, 0, 0, 0),
                     ),
                   ),
                   PopupMenuButton(
@@ -499,7 +503,7 @@ class _WeatherPageState extends State<WeatherPage> with SingleTickerProviderStat
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                  color: Color.fromARGB(255, 0, 0, 0),
                 ),
               ),
               const SizedBox(height: 16),

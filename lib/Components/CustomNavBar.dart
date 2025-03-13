@@ -27,22 +27,21 @@ class _CustomNavBarState extends State<CustomNavBar> {
       body: _pages[_currentIndex],
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
-          color: const Color.fromARGB(255, 27, 94, 32), 
+          color: const Color.fromARGB(255, 58, 58, 58),
           boxShadow: [
             BoxShadow(
-              color: Colors.black26.withOpacity(0.3),
+              color: const Color.fromARGB(66, 39, 39, 39).withOpacity(0.3),
               spreadRadius: 2,
               blurRadius: 10,
               offset: const Offset(0, -2),
             ),
           ],
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: CurvedNavigationBar(
-          height: 70,
+          height: 65,
           backgroundColor: Colors.transparent,
           color: Colors.transparent,
-          buttonBackgroundColor: const Color.fromARGB(255, 46, 125, 50), 
+          buttonBackgroundColor: const Color.fromARGB(255, 98, 210, 201),
           animationDuration: const Duration(milliseconds: 300),
           animationCurve: Curves.easeInOut,
           items: const <Widget>[
