@@ -2,6 +2,8 @@ import 'package:agrisync/App Pages/HomePage.dart';
 import 'package:agrisync/App Pages/Core Pages/MarketPage.dart';
 import 'package:agrisync/App Pages/Core Pages/ProfilePage.dart';
 import 'package:agrisync/App Pages/Core Pages/WeatherPage.dart';
+import 'package:agrisync/App Pages/Core Pages/YieldForecastPage.dart';
+import 'package:agrisync/App Pages/Core Pages/AIChatbotPage.dart'; 
 import 'package:flutter/material.dart';
 import 'package:curved_navigation_bar/curved_navigation_bar.dart';
 
@@ -19,6 +21,8 @@ class _CustomNavBarState extends State<CustomNavBar> {
     const WeatherPage(),
     const MarketPlacePage(),
     const ProfilePage(),
+    const YieldForecastPage(),
+    const AIChatbotPage(),  
   ];
 
   @override
@@ -49,6 +53,8 @@ class _CustomNavBarState extends State<CustomNavBar> {
             Icon(Icons.wb_sunny, size: 35, color: Colors.white),
             Icon(Icons.shopping_cart, size: 35, color: Colors.white),
             Icon(Icons.person, size: 35, color: Colors.white),
+            Icon(Icons.show_chart, size: 35, color: Colors.white),
+            Icon(Icons.chat, size: 35, color: Colors.white),   
           ],
           onTap: (index) {
             setState(() {

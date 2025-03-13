@@ -1,4 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart'; // Ensure this import is correct
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:agrisync/Authentication/Pages/LogOrSignPage.dart';
+import 'package:agrisync/App Pages/Core Pages/EditProfilePage.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -8,21 +16,148 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
+  Map<String, dynamic>? userData;
   bool isDarkMode = false;
   bool notificationsEnabled = true;
+  bool _isLoading = false;
 
-  // Mock user data - in a real app, this would come from a user service or state management
-  final Map<String, dynamic> userData = {
-    'name': 'John Farmer',
-    'email': 'john.farmer@example.com',
-    'location': 'Midwest Region',
-    'farmSize': '250 acres',
-    'preferredCrops': ['Corn', 'Soybeans', 'Wheat'],
-    'memberSince': '2023',
-  };
+  @override
+  void initState() {
+    super.initState();
+    _loadPreferences();
+    _fetchUserData();
+  }
+
+  Future<void> _loadPreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      isDarkMode = prefs.getBool('isDarkMode') ?? false;
+      notificationsEnabled = prefs.getBool('notificationsEnabled') ?? true;
+    });
+  }
+
+  Future<void> _fetchUserData() async {
+    setState(() {
+      _isLoading = true;
+    });
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      try {
+        final doc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .get();
+        if (doc.exists) {
+          setState(() {
+            userData = doc.data();
+            _isLoading = false;
+          });
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('User profile not found')),
+          );
+          setState(() {
+            _isLoading = false;
+          });
+        }
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error fetching profile: $e')),
+        );
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    } else {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const LoginOrRegisterPage()),
+      );
+    }
+  }
+
+  Future<void> _pickImage(ImageSource source) async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: source);
+    if (pickedFile != null) {
+      setState(() {
+        _isLoading = true;
+      });
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        try {
+          final storageRef = FirebaseStorage.instance
+              .ref()
+              .child('profile_pictures/${user.uid}.jpg');
+          await storageRef.putFile(File(pickedFile.path));
+          final downloadUrl = await storageRef.getDownloadURL();
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(user.uid)
+              .update({
+            'profilePictureUrl': downloadUrl,
+          });
+          await _fetchUserData();
+        } catch (e) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error uploading image: $e')),
+          );
+        } finally {
+          setState(() {
+            _isLoading = false;
+          });
+        }
+      }
+    }
+  }
+
+  void _showImageSourceOptions(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.photo_camera),
+                title: const Text('Take a photo'),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _pickImage(ImageSource.camera);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library),
+                title: const Text('Choose from gallery'),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _pickImage(ImageSource.gallery);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _signOut() async {
+    await FirebaseAuth.instance.signOut();
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => const LoginOrRegisterPage()),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading || userData == null) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -32,12 +167,12 @@ class _ProfilePageState extends State<ProfilePage> {
           IconButton(
             icon: const Icon(Icons.edit),
             onPressed: () {
-              // Navigate to profile edit page
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                    content:
-                        Text('Edit profile functionality will be implemented')),
-              );
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => EditProfilePage(userData: userData!),
+                ),
+              ).then((_) => _fetchUserData());
             },
           ),
         ],
@@ -47,7 +182,6 @@ class _ProfilePageState extends State<ProfilePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Profile header with image
             Center(
               child: Column(
                 children: [
@@ -56,26 +190,24 @@ class _ProfilePageState extends State<ProfilePage> {
                       CircleAvatar(
                         radius: 60,
                         backgroundColor: Colors.grey[300],
-                        backgroundImage: const NetworkImage(
-                          'https://www.example.com/placeholder.jpg', // Replace with actual image in production
-                        ),
-                        onBackgroundImageError: (_, __) {},
-                        child: const Icon(Icons.person,
-                            size: 60, color: Colors.grey),
+                        backgroundImage: userData!['profilePictureUrl'] != null &&
+                                userData!['profilePictureUrl'].isNotEmpty
+                            ? NetworkImage(userData!['profilePictureUrl'])
+                            : null,
+                        child: userData!['profilePictureUrl'] == null ||
+                                userData!['profilePictureUrl'].isEmpty
+                            ? const Icon(Icons.person, size: 60, color: Colors.grey)
+                            : null,
                       ),
                       Positioned(
                         bottom: 0,
                         right: 0,
                         child: CircleAvatar(
                           radius: 20,
-                          backgroundColor:
-                              const Color.fromARGB(255, 35, 167, 182),
+                          backgroundColor: const Color.fromARGB(255, 35, 167, 182),
                           child: IconButton(
-                            icon: const Icon(Icons.camera_alt,
-                                color: Colors.white),
-                            onPressed: () {
-                              _showImageSourceOptions(context);
-                            },
+                            icon: const Icon(Icons.camera_alt, color: Colors.white),
+                            onPressed: () => _showImageSourceOptions(context),
                           ),
                         ),
                       ),
@@ -83,11 +215,11 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    userData['name'] ?? 'User Name',
+                    '${userData!['firstName'] ?? ''} ${userData!['lastName'] ?? ''}',
                     style: Theme.of(context).textTheme.headlineSmall,
                   ),
                   Text(
-                    userData['email'] ?? 'email@example.com',
+                    userData!['email'] ?? 'email@example.com',
                     style: Theme.of(context).textTheme.bodyLarge,
                   ),
                   const SizedBox(height: 8),
@@ -107,51 +239,43 @@ class _ProfilePageState extends State<ProfilePage> {
             const SizedBox(height: 24),
             const Divider(),
 
-            // Farm information section
             _buildSectionTitle(context, 'Farm Information'),
             _buildInfoRow(
-                context, 'Location', userData['location'] ?? 'Not specified'),
+                context, 'Location', userData!['location'] ?? 'Not specified'),
             _buildInfoRow(
-                context, 'Farm Size', userData['farmSize'] ?? 'Not specified'),
+                context, 'Farm Size', userData!['farmSize'] ?? 'Not specified'),
             _buildInfoRow(
                 context,
                 'Preferred Crops',
-                (userData['preferredCrops'] as List<String>?)?.join(', ') ??
-                    'Not specified'),
-            _buildInfoRow(context, 'Member Since',
-                userData['memberSince'] ?? 'Not specified'),
+                (userData!['preferredCrops'] as List?)?.join(', ') ?? 'Not specified'),
+            _buildInfoRow(
+              context,
+              'Member Since',
+              userData!['createdAt'] != null
+                  ? (userData!['createdAt'] as Timestamp).toDate().year.toString()
+                  : 'Not specified',
+            ),
 
             const SizedBox(height: 24),
             const Divider(),
 
-            // App settings section
             _buildSectionTitle(context, 'App Settings'),
-
-            // Theme mode toggle
             ListTile(
               leading: const Icon(Icons.brightness_6),
               title: const Text('App Theme'),
               subtitle: Text(isDarkMode ? 'Dark Mode' : 'Light Mode'),
               trailing: Switch(
                 value: isDarkMode,
-                activeColor: Color.fromARGB(255, 35, 167, 182),
-                onChanged: (value) {
+                activeColor: const Color.fromARGB(255, 35, 167, 182),
+                onChanged: (value) async {
                   setState(() {
                     isDarkMode = value;
                   });
-                  // In a real app, you would update the theme in a theme provider
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                          '${value ? "Dark" : "Light"} mode will be applied'),
-                      duration: const Duration(milliseconds: 1500),
-                    ),
-                  );
+                  final prefs = await SharedPreferences.getInstance();
+                  await prefs.setBool('isDarkMode', value);
                 },
               ),
             ),
-
-            // Notifications toggle
             ListTile(
               leading: const Icon(Icons.notifications),
               title: const Text('Notifications'),
@@ -160,48 +284,35 @@ class _ProfilePageState extends State<ProfilePage> {
                   : 'Disabled'),
               trailing: Switch(
                 value: notificationsEnabled,
-                activeColor: Color.fromARGB(255, 35, 167, 182),
-                onChanged: (value) {
+                activeColor: const Color.fromARGB(255, 35, 167, 182),
+                onChanged: (value) async {
                   setState(() {
                     notificationsEnabled = value;
                   });
-                  // In a real app, you would handle notification permissions here
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                          'Notifications ${value ? "enabled" : "disabled"}'),
-                      duration: const Duration(milliseconds: 1500),
-                    ),
-                  );
+                  final prefs = await SharedPreferences.getInstance();
+                  await prefs.setBool('notificationsEnabled', value);
                 },
               ),
             ),
-
-            // Units of measurement
             ListTile(
               leading: const Icon(Icons.straighten),
               title: const Text('Units of Measurement'),
               subtitle: const Text('Metric System'),
               onTap: () {
-                // Show dialog to change measurement units
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                      content: Text(
-                          'Units of measurement settings will be implemented')),
+                      content: Text('Units settings to be implemented')),
                 );
               },
             ),
-
-            // Language selection
             ListTile(
               leading: const Icon(Icons.language),
               title: const Text('Language'),
               subtitle: const Text('English'),
               onTap: () {
-                // Show language selection dialog
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                      content: Text('Language settings will be implemented')),
+                      content: Text('Language settings to be implemented')),
                 );
               },
             ),
@@ -209,57 +320,39 @@ class _ProfilePageState extends State<ProfilePage> {
             const SizedBox(height: 24),
             const Divider(),
 
-            // Account actions section
             _buildSectionTitle(context, 'Account'),
-
-            // Connected services
             ListTile(
               leading: const Icon(Icons.link),
               title: const Text('Connected Services'),
-              subtitle:
-                  const Text('Weather API, Market Integration, Soil Sensors'),
+              subtitle: const Text('Weather API, Market Integration, Soil Sensors'),
               onTap: () {
-                // Navigate to connected services page
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                      content:
-                          Text('Connected services page will be implemented')),
+                      content: Text('Connected services to be implemented')),
                 );
               },
             ),
-
-            // Export data
             ListTile(
               leading: const Icon(Icons.download),
-              title: const Text(
-                'Export Farm Data',
-              ),
+              title: const Text('Export Farm Data'),
               subtitle: const Text('Download your data in CSV or PDF format'),
               onTap: () {
-                // Show export options
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                      content: Text(
-                          'Data export functionality will be implemented')),
+                      content: Text('Data export to be implemented')),
                 );
               },
             ),
-
-            // Privacy settings
             ListTile(
               leading: const Icon(Icons.security),
               title: const Text('Privacy & Security'),
               onTap: () {
-                // Navigate to privacy settings
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                      content:
-                          Text('Privacy settings page will be implemented')),
+                      content: Text('Privacy settings to be implemented')),
                 );
               },
             ),
-
-            // Logout button
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 16.0),
               child: Center(
@@ -269,17 +362,9 @@ class _ProfilePageState extends State<ProfilePage> {
                   style: ElevatedButton.styleFrom(
                     foregroundColor: Colors.white,
                     backgroundColor: Colors.red,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 24, vertical: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                   ),
-                  onPressed: () {
-                    // Handle logout
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content:
-                              Text('Logout functionality will be implemented')),
-                    );
-                  },
+                  onPressed: _signOut,
                 ),
               ),
             ),
@@ -294,8 +379,8 @@ class _ProfilePageState extends State<ProfilePage> {
       padding: const EdgeInsets.symmetric(vertical: 12.0),
       child: Text(
         title,
-        style: TextStyle(
-          color: const Color.fromARGB(255, 35, 167, 182),
+        style: const TextStyle(
+          color: Color.fromARGB(255, 35, 167, 182),
           fontWeight: FontWeight.bold,
         ),
       ),
@@ -325,46 +410,6 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
         ],
       ),
-    );
-  }
-
-  void _showImageSourceOptions(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: const Icon(Icons.photo_camera),
-                title: const Text('Take a photo'),
-                onTap: () {
-                  Navigator.of(context).pop();
-                  // Handle camera capture
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                        content:
-                            Text('Camera functionality will be implemented')),
-                  );
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.photo_library),
-                title: const Text('Choose from gallery'),
-                onTap: () {
-                  Navigator.of(context).pop();
-                  // Handle gallery selection
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                        content: Text('Gallery selection will be implemented')),
-                  );
-                },
-              ),
-            ],
-          ),
-        );
-      },
     );
   }
 }
