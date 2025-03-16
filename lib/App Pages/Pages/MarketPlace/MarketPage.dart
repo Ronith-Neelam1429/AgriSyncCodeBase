@@ -556,7 +556,7 @@ class _MarketPlacePageState extends State<MarketPlacePage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: const EdgeInsets.all(7),
                   decoration: BoxDecoration(
                     color: color.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
@@ -564,10 +564,10 @@ class _MarketPlacePageState extends State<MarketPlacePage> {
                   child: Icon(
                     icon,
                     color: color,
-                    size: 30,
+                    size: 25,
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 6),
                 Text(
                   title,
                   style: const TextStyle(

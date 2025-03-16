@@ -1,12 +1,18 @@
 import 'package:agrisync/Authentication/AuthService/AuthWrapper.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'firebase_options.dart';
-import 'package:agrisync/Components/CustomNavBar.dart';
+import 'firebase_options.dart'; // Import this
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    print("Firebase initialized successfully");
+  } catch (e) {
+    print("Firebase initialization error: $e");
+  }
   runApp(const MyApp());
 }
 

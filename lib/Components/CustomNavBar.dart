@@ -1,9 +1,9 @@
 import 'package:agrisync/App Pages/HomePage.dart';
+import 'package:agrisync/App%20Pages/HomePageV2.dart';
 import 'package:agrisync/App%20Pages/Pages/MarketPlace/MarketPage.dart';
 import 'package:agrisync/App%20Pages/Pages/ProfilePage/ProfilePage.dart';
 import 'package:agrisync/App%20Pages/Pages/Weather/WeatherPage.dart';
 import 'package:agrisync/App%20Pages/Pages/Analytics/YieldForecastPage.dart';
-import 'package:agrisync/App%20Pages/Pages/Analytics/AIChatbotPage.dart'; 
 import 'package:flutter/material.dart';
 import 'package:curved_navigation_bar/curved_navigation_bar.dart';
 
@@ -22,7 +22,8 @@ class _CustomNavBarState extends State<CustomNavBar> {
     const MarketPlacePage(),
     const ProfilePage(),
     const YieldForecastPage(),
-    const AIChatbotPage(),  
+    const HomePage2()
+    //const AIChatbotPage(),  
   ];
 
   @override
@@ -32,6 +33,10 @@ class _CustomNavBarState extends State<CustomNavBar> {
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: const Color.fromARGB(255, 58, 58, 58),
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(10),
+            topRight: Radius.circular(10),
+          ),
           boxShadow: [
             BoxShadow(
               color: const Color.fromARGB(66, 39, 39, 39).withOpacity(0.3),
@@ -42,19 +47,20 @@ class _CustomNavBarState extends State<CustomNavBar> {
           ],
         ),
         child: CurvedNavigationBar(
-          height: 65,
+          
+          height: 55,
           backgroundColor: Colors.transparent,
           color: Colors.transparent,
           buttonBackgroundColor: const Color.fromARGB(255, 98, 210, 201),
           animationDuration: const Duration(milliseconds: 300),
           animationCurve: Curves.easeInOut,
           items: const <Widget>[
-            Icon(Icons.home, size: 35, color: Colors.white),
-            Icon(Icons.wb_sunny, size: 35, color: Colors.white),
-            Icon(Icons.shopping_cart, size: 35, color: Colors.white),
-            Icon(Icons.person, size: 35, color: Colors.white),
-            Icon(Icons.show_chart, size: 35, color: Colors.white),
-            Icon(Icons.chat, size: 35, color: Colors.white),   
+            Icon(Icons.home, size: 25, color: Colors.white),
+            Icon(Icons.wb_sunny, size: 25, color: Colors.white),
+            Icon(Icons.shopping_cart, size: 25, color: Colors.white),
+            Icon(Icons.person, size: 25, color: Colors.white),
+            Icon(Icons.show_chart, size: 25, color: Colors.white),
+            Icon(Icons.chat, size: 25, color: Colors.white),   
           ],
           onTap: (index) {
             setState(() {

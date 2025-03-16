@@ -225,56 +225,66 @@ class _ToolsPageState extends State<ToolsPage> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              ClipRRect(
-                                borderRadius: const BorderRadius.vertical(
-                                  top: Radius.circular(8),
-                                ),
-                                child: Image.network(
-                                  listing.imageUrl,
-                                  height: 120,
-                                  width: double.infinity,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return Container(
-                                      height: 120,
-                                      color: Colors.grey[300],
-                                      child: const Icon(Icons.error),
-                                    );
-                                  },
+                              // Image container with fixed or proportional height
+                              Expanded(
+                                flex: 3, // Allocate 3/5 of space to image
+                                child: ClipRRect(
+                                  borderRadius: const BorderRadius.vertical(
+                                    top: Radius.circular(8),
+                                  ),
+                                  child: Image.network(
+                                    listing.imageUrl,
+                                    width: double.infinity,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Container(
+                                        color: Colors.grey[300],
+                                        child: const Icon(Icons.error),
+                                      );
+                                    },
+                                  ),
                                 ),
                               ),
-                              Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      listing.name,
-                                      style: const TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.bold,
+                              // Text content with flexible height
+                              Expanded(
+                                flex:
+                                    2, // Allocate 2/5 of space to text content
+                                child: Padding(
+                                  padding: const EdgeInsets.all(8.0),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        listing.name,
+                                        style: const TextStyle(
+                                          fontSize: 13, // Slightly smaller font
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                        maxLines:
+                                            1, // Limit to 1 line initially
+                                        overflow: TextOverflow.ellipsis,
                                       ),
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      '\$${listing.price.toStringAsFixed(2)}',
-                                      style: const TextStyle(
-                                        fontSize: 16,
-                                        color: Colors.black87,
-                                        fontWeight: FontWeight.bold,
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        '\$${listing.price.toStringAsFixed(2)}',
+                                        style: const TextStyle(
+                                          fontSize: 14, // Slightly smaller font
+                                          color: Colors.green,
+                                          fontWeight: FontWeight.bold,
+                                        ),
                                       ),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      listing.condition,
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.grey[600],
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        listing.condition,
+                                        style: TextStyle(
+                                          fontSize:
+                                              11, // Smaller font for condition
+                                          color: Colors.grey[600],
+                                        ),
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
                               ),
                             ],
@@ -284,9 +294,11 @@ class _ToolsPageState extends State<ToolsPage> {
                     },
                     childCount: listings.length,
                   ),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
-                    childAspectRatio: 0.85,
+                    childAspectRatio: MediaQuery.of(context).size.width > 400
+                        ? 0.85
+                        : 0.75, // Responsive aspect ratio
                     mainAxisSpacing: 8,
                     crossAxisSpacing: 8,
                   ),

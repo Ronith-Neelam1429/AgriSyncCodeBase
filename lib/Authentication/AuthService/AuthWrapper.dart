@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:agrisync/Components/CustomNavBar.dart';
 import 'package:agrisync/Authentication/Pages/LogOrSignPage.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthWrapper extends StatefulWidget {
   const AuthWrapper({Key? key}) : super(key: key);
