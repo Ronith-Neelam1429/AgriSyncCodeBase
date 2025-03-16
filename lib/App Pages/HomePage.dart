@@ -1,7 +1,9 @@
 import 'dart:convert';
 
+import 'package:agrisync/App Pages/Pages/Forum/forum_page.dart';
 import 'package:agrisync/App%20Pages/Pages/Weather/LocationService.dart';
 import 'package:agrisync/App%20Pages/Pages/Weather/WeatherCard.dart';
+import 'package:agrisync/Components/TaskScheduler.dart';
 import 'package:agrisync/Components/ToolTile.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -545,7 +547,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 Padding(
                   padding: const EdgeInsets.only(top: 8.0),
                   child: SizedBox(
-                    height: 220, // Adjust height as needed
+                    height: 200, // Adjust height as needed
                     child: PageView(
                       controller: _updatesPageController,
                       onPageChanged: (int page) {
@@ -599,7 +601,12 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                             color: Color.fromARGB(255, 66, 192, 201),
                           ),
                           onTap: () {
-                            // Navigate to Forum page
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ForumPage(),
+                              ),
+                            );
                           },
                         ),
                         ToolTile(
@@ -622,6 +629,12 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                           ),
                           onTap: () {
                             // Navigate to Forum page
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const TaskScheduler(),
+                              ),
+                            );
                           },
                         ),
                         ToolTile(
