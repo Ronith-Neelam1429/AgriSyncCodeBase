@@ -1,3 +1,4 @@
+import 'package:agrisync/App%20Pages/Pages/Forum/PostDetails.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -14,8 +15,10 @@ class _ForumPageState extends State<ForumPage> with SingleTickerProviderStateMix
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   final TextEditingController _titleController = TextEditingController();
+  final TextEditingController _searchController = TextEditingController();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  String _searchQuery = '';
 
   @override
   void initState() {
@@ -34,6 +37,7 @@ class _ForumPageState extends State<ForumPage> with SingleTickerProviderStateMix
   void dispose() {
     _animationController.dispose();
     _titleController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -162,7 +166,7 @@ class _ForumPageState extends State<ForumPage> with SingleTickerProviderStateMix
               TextField(
                 controller: _titleController,
                 decoration: InputDecoration(
-                  hintText: 'What’s on your mind?',
+                  hintText: "What's on your mind?",
                   hintStyle: const TextStyle(color: Colors.grey),
                   filled: true,
                   fillColor: const Color.fromARGB(255, 27, 94, 32).withOpacity(0.3),
@@ -196,31 +200,11 @@ class _ForumPageState extends State<ForumPage> with SingleTickerProviderStateMix
     final userId = user?.uid ?? '';
 
     return Scaffold(
-      backgroundColor: Colors.black,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
         elevation: 0,
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                Color.fromARGB(255, 27, 94, 32),
-                Color.fromARGB(255, 87, 189, 179),
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black54,
-                blurRadius: 10,
-                offset: Offset(0, 4),
-              ),
-            ],
-          ),
-        ),
+        flexibleSpace: Container(),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          icon: const Icon(Icons.arrow_back, color: Color.fromARGB(255, 0, 0, 0)),
           onPressed: () {
             Navigator.pushReplacement(
               context,
@@ -231,438 +215,45 @@ class _ForumPageState extends State<ForumPage> with SingleTickerProviderStateMix
         title: const Text(
           'AgriSync Forum',
           style: TextStyle(
-            fontSize: 24,
-            color: Colors.white,
+            fontSize: 20,
+            color: Colors.black,
             fontWeight: FontWeight.bold,
-            shadows: [
-              Shadow(
-                color: Colors.black54,
-                blurRadius: 4,
-                offset: Offset(2, 2),
-              ),
-            ],
           ),
         ),
         centerTitle: true,
       ),
-      body: FadeTransition(
-        opacity: _fadeAnimation,
-        child: StreamBuilder<QuerySnapshot>(
-          stream: _firestore.collection('posts').orderBy('timestamp', descending: true).snapshots(),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            if (snapshot.hasError) {
-              return Center(child: Text('Error: ${snapshot.error}', style: const TextStyle(color: Colors.white)));
-            }
-            if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-              return const Center(
-                child: Text(
-                  'No posts yet. Be the first to share!',
-                  style: TextStyle(fontSize: 18, color: Colors.grey),
+      body: Column(
+        children: [
+          // Search bar under the app bar
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16.0, 8.0, 16.0, 4.0),
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: 'Search posts...',
+                hintStyle: const TextStyle(color: Colors.grey),
+                prefixIcon: const Icon(Icons.search, color: Color.fromARGB(255, 87, 189, 179)),
+                filled: true,
+                fillColor: const Color.fromARGB(255, 226, 226, 226),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide.none,
                 ),
-              );
-            }
-
-            final posts = snapshot.data!.docs;
-            return ListView.builder(
-              padding: const EdgeInsets.all(16.0),
-              itemCount: posts.length,
-              itemBuilder: (context, index) {
-                final post = posts[index];
-                final data = post.data() as Map<String, dynamic>;
-                final timestamp = (data['timestamp'] as Timestamp?)?.toDate();
-                final timeAgo = timestamp != null
-                    ? _formatTimeAgo(timestamp)
-                    : 'Just now';
-
-                return Card(
-                  color: const Color.fromARGB(255, 39, 39, 39),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                  margin: const EdgeInsets.only(bottom: 16.0),
-                  elevation: 5,
-                  child: InkWell(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => PostDetailsPage(postId: post.id, postData: data),
-                        ),
-                      );
-                    },
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Column(
-                            children: [
-                              IconButton(
-                                icon: const Icon(Icons.arrow_upward, color: Color.fromARGB(255, 87, 189, 179)),
-                                onPressed: () => _upvotePost(post.id, data['upvotes'] ?? 0, userId),
-                              ),
-                              Text(
-                                '${data['upvotes'] ?? 0}',
-                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.arrow_downward, color: Color.fromARGB(255, 87, 189, 179)),
-                                onPressed: () => _downvotePost(post.id, data['upvotes'] ?? 0, userId),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  data['title'] ?? 'Untitled',
-                                  style: const TextStyle(
-                                    fontSize: 18,
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Row(
-                                  children: [
-                                    Text(
-                                      'u/${data['authorEmail']?.split('@')[0] ?? 'Anonymous'}',
-                                      style: const TextStyle(fontSize: 14, color: Colors.grey),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      timeAgo,
-                                      style: const TextStyle(fontSize: 14, color: Colors.grey),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 8),
-                                Row(
-                                  children: [
-                                    const Icon(Icons.chat_bubble_outline, color: Colors.grey, size: 16),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      '${data['comments'] ?? 0} comments',
-                                      style: const TextStyle(fontSize: 14, color: Colors.grey),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                );
+                contentPadding: const EdgeInsets.symmetric(vertical: 0),
+              ),
+              onChanged: (value) {
+                setState(() {
+                  _searchQuery = value.toLowerCase();
+                });
               },
-            );
-          },
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showCreatePostModal,
-        backgroundColor: const Color.fromARGB(255, 87, 189, 179),
-        child: const Icon(Icons.add, color: Colors.white),
-      ),
-    );
-  }
-
-  String _formatTimeAgo(DateTime dateTime) {
-    final now = DateTime.now();
-    final difference = now.difference(dateTime);
-
-    if (difference.inSeconds < 60) return '${difference.inSeconds}s ago';
-    if (difference.inMinutes < 60) return '${difference.inMinutes}m ago';
-    if (difference.inHours < 24) return '${difference.inHours}h ago';
-    if (difference.inDays < 30) return '${difference.inDays}d ago';
-    return '${(difference.inDays / 30).floor()}mo ago';
-  }
-}
-
-class PostDetailsPage extends StatefulWidget {
-  final String postId;
-  final Map<String, dynamic> postData;
-
-  const PostDetailsPage({super.key, required this.postId, required this.postData});
-
-  @override
-  _PostDetailsPageState createState() => _PostDetailsPageState();
-}
-
-class _PostDetailsPageState extends State<PostDetailsPage> with SingleTickerProviderStateMixin {
-  late AnimationController _animationController;
-  late Animation<double> _fadeAnimation;
-  final TextEditingController _commentController = TextEditingController();
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-
-  @override
-  void initState() {
-    super.initState();
-    _animationController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 800),
-    );
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
-    );
-    _animationController.forward();
-  }
-
-  @override
-  void dispose() {
-    _animationController.dispose();
-    _commentController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _addComment() async {
-    final user = _auth.currentUser;
-    if (user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please sign in to comment')),
-      );
-      return;
-    }
-
-    if (_commentController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Comment cannot be empty')),
-      );
-      return;
-    }
-
-    try {
-      await _firestore.collection('posts').doc(widget.postId).collection('comments').add({
-        'content': _commentController.text,
-        'authorId': user.uid,
-        'authorEmail': user.email,
-        'upvotes': 0,
-        'timestamp': FieldValue.serverTimestamp(),
-      });
-      await _firestore.collection('posts').doc(widget.postId).update({
-        'comments': FieldValue.increment(1),
-      });
-      _commentController.clear();
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error adding comment: $e')),
-      );
-    }
-  }
-
-  Future<bool> _hasUserVotedComment(String commentId, String userId, String voteType) async {
-    final voteDoc = await _firestore
-        .collection('posts')
-        .doc(widget.postId)
-        .collection('comments')
-        .doc(commentId)
-        .collection('comment_votes')
-        .doc(userId)
-        .get();
-    if (voteDoc.exists) {
-      return voteDoc.data()![voteType] == true;
-    }
-    return false;
-  }
-
-  Future<void> _upvoteComment(String commentId, int currentUpvotes, String userId) async {
-    if (await _hasUserVotedComment(commentId, userId, 'upvoted')) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('You have already upvoted this comment')),
-      );
-      return;
-    }
-
-    try {
-      await _firestore
-          .collection('posts')
-          .doc(widget.postId)
-          .collection('comments')
-          .doc(commentId)
-          .update({
-        'upvotes': currentUpvotes + 1,
-      });
-      await _firestore
-          .collection('posts')
-          .doc(widget.postId)
-          .collection('comments')
-          .doc(commentId)
-          .collection('comment_votes')
-          .doc(userId)
-          .set({
-        'upvoted': true,
-        'downvoted': false,
-      }, SetOptions(merge: true));
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error upvoting comment: $e')),
-      );
-    }
-  }
-
-  Future<void> _downvoteComment(String commentId, int currentUpvotes, String userId) async {
-    if (currentUpvotes <= 0) return;
-    if (await _hasUserVotedComment(commentId, userId, 'downvoted')) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('You have already downvoted this comment')),
-      );
-      return;
-    }
-
-    try {
-      await _firestore
-          .collection('posts')
-          .doc(widget.postId)
-          .collection('comments')
-          .doc(commentId)
-          .update({
-        'upvotes': currentUpvotes - 1,
-      });
-      await _firestore
-          .collection('posts')
-          .doc(widget.postId)
-          .collection('comments')
-          .doc(commentId)
-          .collection('comment_votes')
-          .doc(userId)
-          .set({
-        'upvoted': false,
-        'downvoted': true,
-      }, SetOptions(merge: true));
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error downvoting comment: $e')),
-      );
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final user = _auth.currentUser;
-    final userId = user?.uid ?? '';
-    final timestamp = (widget.postData['timestamp'] as Timestamp?)?.toDate();
-    final timeAgo = timestamp != null ? _formatTimeAgo(timestamp) : 'Just now';
-
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                Color.fromARGB(255, 27, 94, 32),
-                Color.fromARGB(255, 87, 189, 179),
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black54,
-                blurRadius: 10,
-                offset: Offset(0, 4),
-              ),
-            ],
           ),
-        ),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: const Text(
-          'Discussion Thread',
-          style: TextStyle(
-            fontSize: 24,
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            shadows: [
-              Shadow(
-                color: Colors.black54,
-                blurRadius: 4,
-                offset: Offset(2, 2),
-              ),
-            ],
-          ),
-        ),
-        centerTitle: true,
-      ),
-      body: FadeTransition(
-        opacity: _fadeAnimation,
-        child: Column(
-          children: [
-            // Post Header
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Card(
-                color: const Color.fromARGB(255, 39, 39, 39),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                elevation: 5,
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        widget.postData['title'] ?? 'Untitled',
-                        style: const TextStyle(
-                          fontSize: 20,
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Text(
-                            'u/${widget.postData['authorEmail']?.split('@')[0] ?? 'Anonymous'}',
-                            style: const TextStyle(fontSize: 14, color: Colors.grey),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            timeAgo,
-                            style: const TextStyle(fontSize: 14, color: Colors.grey),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          const Icon(Icons.arrow_upward, color: Color.fromARGB(255, 87, 189, 179), size: 16),
-                          const SizedBox(width: 4),
-                          Text(
-                            '${widget.postData['upvotes'] ?? 0} upvotes',
-                            style: const TextStyle(fontSize: 14, color: Colors.grey),
-                          ),
-                          const SizedBox(width: 16),
-                          const Icon(Icons.chat_bubble_outline, color: Colors.grey, size: 16),
-                          const SizedBox(width: 4),
-                          Text(
-                            '${widget.postData['comments'] ?? 0} comments',
-                            style: const TextStyle(fontSize: 14, color: Colors.grey),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            // Comments Section
-            Expanded(
+          // Forum content
+          Expanded(
+            child: FadeTransition(
+              opacity: _fadeAnimation,
               child: StreamBuilder<QuerySnapshot>(
-                stream: _firestore
-                    .collection('posts')
-                    .doc(widget.postId)
-                    .collection('comments')
-                    .orderBy('timestamp', descending: true)
-                    .snapshots(),
+                stream: _firestore.collection('posts').orderBy('timestamp', descending: true).snapshots(),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(child: CircularProgressIndicator());
@@ -673,76 +264,121 @@ class _PostDetailsPageState extends State<PostDetailsPage> with SingleTickerProv
                   if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                     return const Center(
                       child: Text(
-                        'No comments yet. Be the first to comment!',
-                        style: TextStyle(fontSize: 16, color: Colors.grey),
+                        'No posts yet. Be the first to share!',
+                        style: TextStyle(fontSize: 18, color: Colors.grey),
                       ),
                     );
                   }
 
-                  final comments = snapshot.data!.docs;
+                  final posts = snapshot.data!.docs;
+                  // Filter posts based on search query
+                  final filteredPosts = _searchQuery.isEmpty
+                      ? posts
+                      : posts.where((post) {
+                          final data = post.data() as Map<String, dynamic>;
+                          final title = (data['title'] as String? ?? '').toLowerCase();
+                          final author = (data['authorEmail'] as String? ?? '').toLowerCase();
+                          return title.contains(_searchQuery) || author.contains(_searchQuery);
+                        }).toList();
+
+                  if (filteredPosts.isEmpty) {
+                    return const Center(
+                      child: Text(
+                        'No posts match your search',
+                        style: TextStyle(fontSize: 18, color: Colors.grey),
+                      ),
+                    );
+                  }
+
                   return ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                    itemCount: comments.length,
+                    padding: const EdgeInsets.all(16.0),
+                    itemCount: filteredPosts.length,
                     itemBuilder: (context, index) {
-                      final comment = comments[index];
-                      final data = comment.data() as Map<String, dynamic>;
-                      final commentTimestamp = (data['timestamp'] as Timestamp?)?.toDate();
-                      final commentTimeAgo = commentTimestamp != null
-                          ? _formatTimeAgo(commentTimestamp)
+                      final post = filteredPosts[index];
+                      final data = post.data() as Map<String, dynamic>;
+                      final timestamp = (data['timestamp'] as Timestamp?)?.toDate();
+                      final timeAgo = timestamp != null
+                          ? _formatTimeAgo(timestamp)
                           : 'Just now';
 
                       return Card(
-                        color: const Color.fromARGB(255, 50, 50, 50),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        margin: const EdgeInsets.only(bottom: 12.0),
-                        child: Padding(
-                          padding: const EdgeInsets.all(12.0),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Column(
-                                children: [
-                                  IconButton(
-                                    icon: const Icon(Icons.arrow_upward, color: Color.fromARGB(255, 87, 189, 179), size: 16),
-                                    onPressed: () => _upvoteComment(comment.id, data['upvotes'] ?? 0, userId),
-                                  ),
-                                  Text(
-                                    '${data['upvotes'] ?? 0}',
-                                    style: const TextStyle(color: Colors.white),
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(Icons.arrow_downward, color: Color.fromARGB(255, 87, 189, 179), size: 16),
-                                    onPressed: () => _downvoteComment(comment.id, data['upvotes'] ?? 0, userId),
-                                  ),
-                                ],
+                        color: const Color.fromARGB(255, 39, 39, 39),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                        margin: const EdgeInsets.only(bottom: 16.0),
+                        elevation: 5,
+                        child: InkWell(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => PostDetailsPage(postId: post.id, postData: data),
                               ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                            );
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Column(
                                   children: [
-                                    Row(
-                                      children: [
-                                        Text(
-                                          'u/${data['authorEmail']?.split('@')[0] ?? 'Anonymous'}',
-                                          style: const TextStyle(fontSize: 12, color: Colors.grey),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Text(
-                                          commentTimeAgo,
-                                          style: const TextStyle(fontSize: 12, color: Colors.grey),
-                                        ),
-                                      ],
+                                    IconButton(
+                                      icon: const Icon(Icons.arrow_upward, color: Color.fromARGB(255, 87, 189, 179)),
+                                      onPressed: () => _upvotePost(post.id, data['upvotes'] ?? 0, userId),
                                     ),
-                                    const SizedBox(height: 4),
                                     Text(
-                                      data['content'] ?? '',
-                                      style: const TextStyle(fontSize: 14, color: Colors.white),
+                                      '${data['upvotes'] ?? 0}',
+                                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.arrow_downward, color: Color.fromARGB(255, 87, 189, 179)),
+                                      onPressed: () => _downvotePost(post.id, data['upvotes'] ?? 0, userId),
                                     ),
                                   ],
                                 ),
-                              ),
-                            ],
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        data['title'] ?? 'Untitled',
+                                        style: const TextStyle(
+                                          fontSize: 18,
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Row(
+                                        children: [
+                                          Text(
+                                            'u/${data['authorEmail']?.split('@')[0] ?? 'Anonymous'}',
+                                            style: const TextStyle(fontSize: 14, color: Colors.grey),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            timeAgo,
+                                            style: const TextStyle(fontSize: 14, color: Colors.grey),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Row(
+                                        children: [
+                                          const Icon(Icons.chat_bubble_outline, color: Colors.grey, size: 16),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            '${data['comments'] ?? 0} comments',
+                                            style: const TextStyle(fontSize: 14, color: Colors.grey),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       );
@@ -751,37 +387,13 @@ class _PostDetailsPageState extends State<PostDetailsPage> with SingleTickerProv
                 },
               ),
             ),
-            // Comment Input
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _commentController,
-                      decoration: InputDecoration(
-                        hintText: 'Add a comment...',
-                        hintStyle: const TextStyle(color: Colors.grey),
-                        filled: true,
-                        fillColor: const Color.fromARGB(255, 39, 39, 39),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
-                      style: const TextStyle(color: Colors.white),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  IconButton(
-                    icon: const Icon(Icons.send, color: Color.fromARGB(255, 87, 189, 179)),
-                    onPressed: _addComment,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _showCreatePostModal,
+        backgroundColor: const Color.fromARGB(255, 87, 189, 179),
+        child: const Icon(Icons.add, color: Colors.white),
       ),
     );
   }

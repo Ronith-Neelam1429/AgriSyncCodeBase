@@ -429,9 +429,10 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Scaffold(
-        body: SingleChildScrollView(
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -490,7 +491,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                         ],
                       ),
                     ),
-
+            
                     const SizedBox(width: 8),
                     // Settings icon
                     Container(
@@ -501,7 +502,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                       child: const Icon(Icons.notifications_outlined,
                           color: Color.fromARGB(255, 128, 128, 128)),
                     ),
-
+            
                     // Notification icon
                     Container(
                       padding: const EdgeInsets.all(8),

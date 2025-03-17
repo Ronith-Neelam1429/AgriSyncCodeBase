@@ -5,7 +5,10 @@ import 'package:agrisync/App%20Pages/Pages/MarketPlace/Irrigation/IrrigationPage
 import 'package:agrisync/App%20Pages/Pages/MarketPlace/NotificationModel.dart';
 import 'package:agrisync/App%20Pages/Pages/MarketPlace/Pesticides/PesticidePage.dart';
 import 'package:agrisync/App%20Pages/Pages/MarketPlace/Seeds/SeedsPage.dart';
+import 'package:agrisync/App%20Pages/Pages/MarketPlace/Seller/BankAccountLink.dart';
 import 'package:agrisync/App%20Pages/Pages/MarketPlace/Tools/ToolsPage.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 class MarketPlacePage extends StatefulWidget {
@@ -21,10 +24,17 @@ class _MarketPlacePageState extends State<MarketPlacePage> {
   // Flag to control notification panel visibility
   bool _showNotificationPanel = false;
 
-  @override
+  String? _currentUserId;
+
+  bool _isLoading = false;
+
+   @override
   void initState() {
     super.initState();
     print("MarketPlacePage initState called");
+    
+    // Get current user ID
+    _currentUserId = FirebaseAuth.instance.currentUser?.uid;
 
     // Load existing data first - now returns a Future
     DatabaseService.loadExistingData().then((_) {
@@ -52,6 +62,136 @@ class _MarketPlacePageState extends State<MarketPlacePage> {
         print("Error from notification stream: $error");
       });
     });
+  }
+
+  void _handleAddButtonClick() async {
+    if (_currentUserId == null) {
+      // Show error if user is not logged in
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please log in to access seller features')),
+      );
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      // Check if user is already a seller
+      DocumentSnapshot userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(_currentUserId)
+          .get();
+
+      setState(() {
+        _isLoading = false;
+      });
+
+      if (userDoc.exists) {
+        Map<String, dynamic> userData = userDoc.data() as Map<String, dynamic>;
+        
+        if (userData.containsKey('isSeller') && userData['isSeller'] == true) {
+          // User is already a seller, navigate directly to seller page
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const BankAccountLinkingPage()),
+          );
+        } else {
+          // User is not a seller, show the dialog
+          _showBecomeSellerDialog();
+        }
+      } else {
+        // Document doesn't exist, show dialog
+        _showBecomeSellerDialog();
+      }
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      print("Error checking seller status: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: ${e.toString()}')),
+      );
+    }
+  }
+
+  // Method to show the "Become a Seller" dialog
+  void _showBecomeSellerDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("Become a Seller"),
+          content: const Text("Do you want to become a seller?"),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog
+              },
+              child: const Text("No"),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog
+                _updateUserToSeller(); // Update user status in Firestore
+              },
+              child: const Text("Yes"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Method to update the user's status to seller in Firestore
+  void _updateUserToSeller() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      if (_currentUserId != null) {
+        // Update the user document with isSeller field
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(_currentUserId)
+            .update({'isSeller': true});
+        
+        setState(() {
+          _isLoading = false;
+        });
+        
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('You are now registered as a seller!')),
+        );
+        
+        // Navigate to the seller page
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const BankAccountLinkingPage()),
+        );
+      } else {
+        setState(() {
+          _isLoading = false;
+        });
+        
+        // Show error if user is not logged in
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please log in to become a seller')),
+        );
+      }
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      
+      print("Error updating user to seller: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: ${e.toString()}')),
+      );
+    }
   }
 
   // Method to listen for database changes
@@ -126,35 +266,54 @@ class _MarketPlacePageState extends State<MarketPlacePage> {
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            Stack(
+                            Row(
                               children: [
-                                IconButton(
-                                  icon:
-                                      const Icon(Icons.notifications_outlined),
-                                  onPressed: () {
-                                    setState(() {
-                                      _showNotificationPanel =
-                                          !_showNotificationPanel;
-                                      if (_showNotificationPanel == false) {
-                                        _markAllAsRead();
-                                      }
-                                    });
-                                  },
-                                  iconSize: 28,
-                                ),
-                                if (_hasUnreadNotifications)
-                                  Positioned(
-                                    right: 8,
-                                    top: 8,
-                                    child: Container(
-                                      width: 10,
-                                      height: 10,
-                                      decoration: const BoxDecoration(
-                                        color: Colors.red,
-                                        shape: BoxShape.circle,
-                                      ),
-                                    ),
+                                _isLoading ? Container(
+                                  width: 28,
+                                  height: 28,
+                                  padding: const EdgeInsets.all(4),
+                                  child: const CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    
                                   ),
+                                )  : IconButton(
+                                    onPressed: _handleAddButtonClick,
+                                    icon: const Icon(
+                                      Icons.add,
+                                      size: 28,
+                                    )),
+                                
+                                Stack(
+                                  children: [
+                                    IconButton(
+                                      icon: const Icon(
+                                          Icons.notifications_outlined),
+                                      onPressed: () {
+                                        setState(() {
+                                          _showNotificationPanel =
+                                              !_showNotificationPanel;
+                                          if (_showNotificationPanel == false) {
+                                            _markAllAsRead();
+                                          }
+                                        });
+                                      },
+                                      iconSize: 28,
+                                    ),
+                                    if (_hasUnreadNotifications)
+                                      Positioned(
+                                        right: 8,
+                                        top: 8,
+                                        child: Container(
+                                          width: 10,
+                                          height: 10,
+                                          decoration: const BoxDecoration(
+                                            color: Colors.red,
+                                            shape: BoxShape.circle,
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
                               ],
                             ),
                           ],
