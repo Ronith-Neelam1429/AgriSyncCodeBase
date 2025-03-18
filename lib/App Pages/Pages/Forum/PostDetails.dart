@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:agrisync/Services/forum_service.dart';
 
 class PostDetailsPage extends StatefulWidget {
   final String postId;
@@ -12,407 +13,177 @@ class PostDetailsPage extends StatefulWidget {
   _PostDetailsPageState createState() => _PostDetailsPageState();
 }
 
-class _PostDetailsPageState extends State<PostDetailsPage> with SingleTickerProviderStateMixin {
-  late AnimationController _animationController;
-  late Animation<double> _fadeAnimation;
+class _PostDetailsPageState extends State<PostDetailsPage> {
   final TextEditingController _commentController = TextEditingController();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  Map<String, String>? _replyTo;
 
-  @override
-  void initState() {
-    super.initState();
-    _animationController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 800),
-    );
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
-    );
-    _animationController.forward();
-  }
-
-  @override
-  void dispose() {
-    _animationController.dispose();
-    _commentController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _addComment() async {
+  Future<void> _addComment({String? parentId}) async {
     final user = _auth.currentUser;
-    if (user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please sign in to comment')),
-      );
-      return;
-    }
-
-    if (_commentController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Comment cannot be empty')),
-      );
-      return;
-    }
-
+    if (user == null || _commentController.text.isEmpty) return;
     try {
-      await _firestore.collection('posts').doc(widget.postId).collection('comments').add({
-        'content': _commentController.text,
-        'authorId': user.uid,
-        'authorEmail': user.email,
-        'upvotes': 0,
-        'timestamp': FieldValue.serverTimestamp(),
-      });
-      await _firestore.collection('posts').doc(widget.postId).update({
-        'comments': FieldValue.increment(1),
-      });
+      await ForumService().sendComment(widget.postId, _commentController.text, parentId: parentId);
       _commentController.clear();
+      setState(() => _replyTo = null);
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error adding comment: $e')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
     }
   }
 
-  Future<bool> _hasUserVotedComment(String commentId, String userId, String voteType) async {
-    final voteDoc = await _firestore
-        .collection('posts')
-        .doc(widget.postId)
-        .collection('comments')
-        .doc(commentId)
-        .collection('comment_votes')
-        .doc(userId)
-        .get();
-    if (voteDoc.exists) {
-      return voteDoc.data()![voteType] == true;
-    }
-    return false;
+  Future<bool> _hasUserVoted(String commentId, String userId, String voteType) async {
+    final voteDoc = await _firestore.collection('posts').doc(widget.postId).collection('comments').doc(commentId).collection('comment_votes').doc(userId).get();
+    return voteDoc.exists && voteDoc.data()![voteType] == true;
   }
 
   Future<void> _upvoteComment(String commentId, int currentUpvotes, String userId) async {
-    if (await _hasUserVotedComment(commentId, userId, 'upvoted')) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('You have already upvoted this comment')),
-      );
-      return;
-    }
-
-    try {
-      await _firestore
-          .collection('posts')
-          .doc(widget.postId)
-          .collection('comments')
-          .doc(commentId)
-          .update({
-        'upvotes': currentUpvotes + 1,
-      });
-      await _firestore
-          .collection('posts')
-          .doc(widget.postId)
-          .collection('comments')
-          .doc(commentId)
-          .collection('comment_votes')
-          .doc(userId)
-          .set({
-        'upvoted': true,
-        'downvoted': false,
-      }, SetOptions(merge: true));
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error upvoting comment: $e')),
-      );
-    }
+    if (await _hasUserVoted(commentId, userId, 'upvoted')) return;
+    await _firestore.collection('posts').doc(widget.postId).collection('comments').doc(commentId).update({'upvotes': currentUpvotes + 1});
+    await _firestore.collection('posts').doc(widget.postId).collection('comments').doc(commentId).collection('comment_votes').doc(userId).set({'upvoted': true, 'downvoted': false}, SetOptions(merge: true));
   }
 
   Future<void> _downvoteComment(String commentId, int currentUpvotes, String userId) async {
-    if (currentUpvotes <= 0) return;
-    if (await _hasUserVotedComment(commentId, userId, 'downvoted')) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('You have already downvoted this comment')),
-      );
-      return;
-    }
+    if (currentUpvotes <= 0 || await _hasUserVoted(commentId, userId, 'downvoted')) return;
+    await _firestore.collection('posts').doc(widget.postId).collection('comments').doc(commentId).update({'upvotes': currentUpvotes - 1});
+    await _firestore.collection('posts').doc(widget.postId).collection('comments').doc(commentId).collection('comment_votes').doc(userId).set({'upvoted': false, 'downvoted': true}, SetOptions(merge: true));
+  }
 
-    try {
-      await _firestore
-          .collection('posts')
-          .doc(widget.postId)
-          .collection('comments')
-          .doc(commentId)
-          .update({
-        'upvotes': currentUpvotes - 1,
-      });
-      await _firestore
-          .collection('posts')
-          .doc(widget.postId)
-          .collection('comments')
-          .doc(commentId)
-          .collection('comment_votes')
-          .doc(userId)
-          .set({
-        'upvoted': false,
-        'downvoted': true,
-      }, SetOptions(merge: true));
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error downvoting comment: $e')),
-      );
+  List<Map<String, dynamic>> buildCommentTree(List<QueryDocumentSnapshot> comments, String? parentId, int depth) {
+    List<Map<String, dynamic>> result = [];
+    for (var comment in comments) {
+      var data = comment.data() as Map<String, dynamic>;
+      if (data['parentId'] == parentId) {
+        result.add({'comment': comment, 'depth': depth});
+        result.addAll(buildCommentTree(comments, comment.id, depth + 1));
+      }
     }
+    return result;
   }
 
   @override
   Widget build(BuildContext context) {
-    final user = _auth.currentUser;
-    final userId = user?.uid ?? '';
-    final timestamp = (widget.postData['timestamp'] as Timestamp?)?.toDate();
-    final timeAgo = timestamp != null ? _formatTimeAgo(timestamp) : 'Just now';
-
+    final userId = _auth.currentUser?.uid ?? '';
+    final timeAgo = _formatTimeAgo((widget.postData['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now());
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                Color.fromARGB(255, 27, 94, 32),
-                Color.fromARGB(255, 87, 189, 179),
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black54,
-                blurRadius: 10,
-                offset: Offset(0, 4),
-              ),
-            ],
-          ),
-        ),
+        title: const Text('Post', style: TextStyle(color: Colors.white)),
+        backgroundColor: const Color.fromARGB(255, 39, 39, 39),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Discussion Thread',
-          style: TextStyle(
-            fontSize: 24,
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            shadows: [
-              Shadow(
-                color: Colors.black54,
-                blurRadius: 4,
-                offset: Offset(2, 2),
-              )
-            ],
-          ),
-        ),
-        centerTitle: true,
       ),
-      body: FadeTransition(
-        opacity: _fadeAnimation,
-        child: Column(
-          children: [
-            // Post Header
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Card(
-                color: const Color.fromARGB(255, 39, 39, 39),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                elevation: 5,
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        widget.postData['title'] ?? 'Untitled',
-                        style: const TextStyle(
-                          fontSize: 20,
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Text(
-                            'u/${widget.postData['authorEmail']?.split('@')[0] ?? 'Anonymous'}',
-                            style: const TextStyle(fontSize: 14, color: Colors.grey),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            timeAgo,
-                            style: const TextStyle(fontSize: 14, color: Colors.grey),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          const Icon(Icons.arrow_upward, color: Color.fromARGB(255, 87, 189, 179), size: 16),
-                          const SizedBox(width: 4),
-                          Text(
-                            '${widget.postData['upvotes'] ?? 0} upvotes',
-                            style: const TextStyle(fontSize: 14, color: Colors.grey),
-                          ),
-                          const SizedBox(width: 16),
-                          const Icon(Icons.chat_bubble_outline, color: Colors.grey, size: 16),
-                          const SizedBox(width: 4),
-                          Text(
-                            '${widget.postData['comments'] ?? 0} comments',
-                            style: const TextStyle(fontSize: 14, color: Colors.grey),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            // Comments Section
-            Expanded(
-              child: StreamBuilder<QuerySnapshot>(
-                stream: _firestore
-                    .collection('posts')
-                    .doc(widget.postId)
-                    .collection('comments')
-                    .orderBy('timestamp', descending: true)
-                    .snapshots(),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  if (snapshot.hasError) {
-                    return Center(child: Text('Error: ${snapshot.error}', style: const TextStyle(color: Colors.white)));
-                  }
-                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                    return const Center(
-                      child: Text(
-                        'No comments yet. Be the first to comment!',
-                        style: TextStyle(fontSize: 16, color: Colors.grey),
-                      ),
-                    );
-                  }
-
-                  final comments = snapshot.data!.docs;
-                  return ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                    itemCount: comments.length,
-                    itemBuilder: (context, index) {
-                      final comment = comments[index];
-                      final data = comment.data() as Map<String, dynamic>;
-                      final commentTimestamp = (data['timestamp'] as Timestamp?)?.toDate();
-                      final commentTimeAgo = commentTimestamp != null
-                          ? _formatTimeAgo(commentTimestamp)
-                          : 'Just now';
-
-                      return Card(
-                        color: const Color.fromARGB(255, 50, 50, 50),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        margin: const EdgeInsets.only(bottom: 12.0),
-                        child: Padding(
-                          padding: const EdgeInsets.all(12.0),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Column(
-                                children: [
-                                  IconButton(
-                                    icon: const Icon(Icons.arrow_upward, color: Color.fromARGB(255, 87, 189, 179), size: 16),
-                                    onPressed: () => _upvoteComment(comment.id, data['upvotes'] ?? 0, userId),
-                                  ),
-                                  Text(
-                                    '${data['upvotes'] ?? 0}',
-                                    style: const TextStyle(color: Colors.white),
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(Icons.arrow_downward, color: Color.fromARGB(255, 87, 189, 179), size: 16),
-                                    onPressed: () => _downvoteComment(comment.id, data['upvotes'] ?? 0, userId),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Text(
-                                          'u/${data['authorEmail']?.split('@')[0] ?? 'Anonymous'}',
-                                          style: const TextStyle(fontSize: 12, color: Colors.grey),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Text(
-                                          commentTimeAgo,
-                                          style: const TextStyle(fontSize: 12, color: Colors.grey),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      data['content'] ?? '',
-                                      style: const TextStyle(fontSize: 14, color: Colors.white),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  );
-                },
-              ),
-            ),
-            // Comment Input
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Row(
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: ListTile(
+              title: Text(widget.postData['title'], style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _commentController,
-                      decoration: InputDecoration(
-                        hintText: 'Add a comment...',
-                        hintStyle: const TextStyle(color: Colors.grey),
-                        filled: true,
-                        fillColor: const Color.fromARGB(255, 39, 39, 39),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
-                      style: const TextStyle(color: Colors.white),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  IconButton(
-                    icon: const Icon(Icons.send, color: Color.fromARGB(255, 87, 189, 179)),
-                    onPressed: _addComment,
-                  ),
+                  Text('u/${widget.postData['authorEmail']?.split('@')[0] ?? 'Anonymous'} • $timeAgo', style: const TextStyle(color: Colors.grey)),
+                  if (widget.postData['content']?.isNotEmpty ?? false) ...[
+                    const SizedBox(height: 8),
+                    Text(widget.postData['content'], style: const TextStyle(color: Colors.white)),
+                  ],
+                  const SizedBox(height: 8),
+                  Text('${widget.postData['upvotes'] ?? 0} upvotes • ${widget.postData['comments'] ?? 0} comments', style: const TextStyle(color: Colors.grey)),
                 ],
               ),
             ),
-          ],
-        ),
+          ),
+          const Divider(color: Colors.grey),
+          Expanded(
+            child: StreamBuilder<QuerySnapshot>(
+              stream: ForumService().getComments(widget.postId),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+                final comments = snapshot.data!.docs;
+                final commentTree = buildCommentTree(comments, null, 0);
+                return ListView.builder(
+                  itemCount: commentTree.length,
+                  itemBuilder: (context, index) {
+                    final item = commentTree[index];
+                    final comment = item['comment'] as QueryDocumentSnapshot;
+                    final depth = item['depth'] as int;
+                    final data = comment.data() as Map<String, dynamic>;
+                    final timeAgo = _formatTimeAgo((data['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now());
+                    return Padding(
+                      padding: EdgeInsets.only(left: 8.0 + depth * 16.0, right: 8.0, top: 4.0, bottom: 4.0),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Column(
+                            children: [
+                              IconButton(icon: const Icon(Icons.arrow_upward, color: Color.fromARGB(255, 87, 189, 179), size: 16), onPressed: () => _upvoteComment(comment.id, data['upvotes'] ?? 0, userId)),
+                              Text('${data['upvotes'] ?? 0}', style: const TextStyle(color: Colors.white)),
+                              IconButton(icon: const Icon(Icons.arrow_downward, color: Color.fromARGB(255, 87, 189, 179), size: 16), onPressed: () => _downvoteComment(comment.id, data['upvotes'] ?? 0, userId)),
+                            ],
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('u/${data['authorEmail']?.split('@')[0] ?? 'Anonymous'} • $timeAgo', style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                                Text(data['content'], style: const TextStyle(color: Colors.white)),
+                                TextButton(
+                                  onPressed: () => setState(() => _replyTo = {'id': comment.id, 'username': data['authorEmail']?.split('@')[0] ?? 'Anonymous'}),
+                                  child: const Text('Reply', style: TextStyle(color: Color.fromARGB(255, 87, 189, 179))),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _commentController,
+                    decoration: InputDecoration(
+                      hintText: _replyTo != null ? 'Reply to u/${_replyTo!['username']}' : 'Add a comment...',
+                      hintStyle: const TextStyle(color: Colors.grey),
+                      filled: true,
+                      fillColor: const Color.fromARGB(255, 39, 39, 39),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                    ),
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                ),
+                if (_replyTo != null)
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.grey),
+                    onPressed: () => setState(() => _replyTo = null),
+                  ),
+                IconButton(
+                  icon: const Icon(Icons.send, color: Color.fromARGB(255, 87, 189, 179)),
+                  onPressed: () => _addComment(parentId: _replyTo?['id']),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
 
   String _formatTimeAgo(DateTime dateTime) {
-    final now = DateTime.now();
-    final difference = now.difference(dateTime);
-
-    if (difference.inSeconds < 60) return '${difference.inSeconds}s ago';
-    if (difference.inMinutes < 60) return '${difference.inMinutes}m ago';
-    if (difference.inHours < 24) return '${difference.inHours}h ago';
-    if (difference.inDays < 30) return '${difference.inDays}d ago';
-    return '${(difference.inDays / 30).floor()}mo ago';
+    final difference = DateTime.now().difference(dateTime);
+    if (difference.inSeconds < 60) return '${difference.inSeconds}s';
+    if (difference.inMinutes < 60) return '${difference.inMinutes}m';
+    if (difference.inHours < 24) return '${difference.inHours}h';
+    if (difference.inDays < 30) return '${difference.inDays}d';
+    return '${(difference.inDays / 30).floor()}mo';
   }
 }
