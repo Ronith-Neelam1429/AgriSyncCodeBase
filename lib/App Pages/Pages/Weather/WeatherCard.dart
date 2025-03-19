@@ -83,7 +83,7 @@ class _WeatherCardState extends State<WeatherCard> {
   String _getWeatherAdvice() {
     if (weatherData == null) return '';
 
-    final tempC = weatherData!['main']['temp'];
+final tempC = weatherData!['main']['temp'].toDouble();
     final tempF = celsiusToFahrenheit(tempC);
     final humidity = weatherData!['main']['humidity'];
     final clouds = weatherData!['clouds']['all'];
