@@ -4,6 +4,7 @@ import 'package:agrisync/App%20Pages/Forum/forum_page.dart';
 import 'package:agrisync/App%20Pages/Calendar/FarmCalendarPage.dart';
 import 'package:agrisync/App%20Pages/Weather/LocationService.dart';
 import 'package:agrisync/App%20Pages/Weather/WeatherCard.dart';
+import 'package:agrisync/AR/ARFarmPlanningPage.dart';
 import 'package:agrisync/Components/TaskScheduler.dart';
 import 'package:agrisync/Components/ToolTile.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -610,6 +611,22 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                           ),
                           onTap: () {
                             // Navigate to Forum page
+                          },
+                        ),
+                        ToolTile(
+                          title: "AR",
+                          icon: const Icon(
+                            Icons.view_in_ar, 
+                            size: 23,
+                            color: Color.fromARGB(255, 66, 192, 201),
+                          ),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const ARFarmPlanningPage(),
+                              ),
+                            );
                           },
                         ),
                         ToolTile(

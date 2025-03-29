@@ -24,6 +24,8 @@ dependencies:
   shared_preferences: ^2.3.5
   curved_navigation_bar: ^1.0.6
   http: ^1.3.0
+  arcore_flutter_plugin: ^0.1.0
+  vector_math: ^2.1.0
   amazon_cognito_identity_dart_2: ^3.8.0
   percent_indicator: ^4.2.4
   fl_chart: ^0.70.2
@@ -53,3 +55,4 @@ flutter:
     - assets/plant.png
     - assets/photo.png
     - lib/.env
+    - assets/tractor.glb
