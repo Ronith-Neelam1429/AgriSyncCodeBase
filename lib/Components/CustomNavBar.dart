@@ -1,9 +1,10 @@
 import 'package:agrisync/App Pages/HomePage.dart';
-import 'package:agrisync/App%20Pages/HomePageV2.dart';
-import 'package:agrisync/App%20Pages/Pages/MarketPlace/MarketPage.dart';
-import 'package:agrisync/App%20Pages/Pages/ProfilePage/ProfilePage.dart';
-import 'package:agrisync/App%20Pages/Pages/Weather/WeatherPage.dart';
-import 'package:agrisync/App%20Pages/Pages/Analytics/YieldForecastPage.dart';
+import 'package:agrisync/App%20Pages/Analytics/AIChatbotPage.dart';
+import 'package:agrisync/App%20Pages/Analytics/AnalyticsPage.dart';
+import 'package:agrisync/App%20Pages/MarketPlace/MarketPage.dart';
+import 'package:agrisync/App%20Pages/ProfilePage/ProfilePage.dart';
+import 'package:agrisync/App%20Pages/Analytics/YieldForecastPage.dart';
+import 'package:agrisync/App%20Pages/Weather/WeatherPage.dart';
 import 'package:flutter/material.dart';
 import 'package:curved_navigation_bar/curved_navigation_bar.dart';
 
@@ -22,8 +23,7 @@ class _CustomNavBarState extends State<CustomNavBar> {
     const MarketPlacePage(),
     const ProfilePage(),
     const YieldForecastPage(),
-    const HomePage2()
-    //const AIChatbotPage(),  
+    const AIChatbotPage(),  
   ];
 
   @override

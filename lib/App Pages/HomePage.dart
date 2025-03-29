@@ -1,8 +1,8 @@
 import 'dart:convert';
 
-import 'package:agrisync/App Pages/Pages/Forum/forum_page.dart';
-import 'package:agrisync/App%20Pages/Pages/Weather/LocationService.dart';
-import 'package:agrisync/App%20Pages/Pages/Weather/WeatherCard.dart';
+import 'package:agrisync/App%20Pages/Forum/forum_page.dart';
+import 'package:agrisync/App%20Pages/Weather/LocationService.dart';
+import 'package:agrisync/App%20Pages/Weather/WeatherCard.dart';
 import 'package:agrisync/Components/TaskScheduler.dart';
 import 'package:agrisync/Components/ToolTile.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -494,16 +494,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             
                     const SizedBox(width: 8),
                     // Settings icon
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Icons.notifications_outlined,
-                          color: Color.fromARGB(255, 128, 128, 128)),
-                    ),
-            
-                    // Notification icon
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(

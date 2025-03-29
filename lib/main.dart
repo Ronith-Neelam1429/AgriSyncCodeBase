@@ -17,7 +17,6 @@ try {
     // This allows your app to run during development
   }
 
-
   try {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,

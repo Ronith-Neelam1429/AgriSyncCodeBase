@@ -1,6 +1,7 @@
-import 'package:agrisync/App%20Pages/Pages/Forum/forum_page.dart';
-import 'package:agrisync/App%20Pages/Pages/Weather/LocationService.dart';
-import 'package:agrisync/App%20Pages/Pages/Weather/WeatherPage.dart';
+import 'package:agrisync/App%20Pages/Forum/forum_page.dart';
+import 'package:agrisync/App%20Pages/Weather/LocationService.dart';
+import 'package:agrisync/App%20Pages/Weather/WeatherPage.dart';
+
 import 'package:agrisync/Components/TaskScheduler.dart';
 import 'package:flutter/material.dart';
 
