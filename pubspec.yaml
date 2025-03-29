@@ -50,4 +50,4 @@ flutter:
     - assets/shoppingCart.png
     - assets/plant.png
     - assets/photo.png
-    - .env
+    - lib/.env
