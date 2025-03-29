@@ -1,12 +1,14 @@
+import 'package:flutter/material.dart';
+import 'package:curved_navigation_bar/curved_navigation_bar.dart';
+
+// --- Pages ---
 import 'package:agrisync/App Pages/HomePage.dart';
-import 'package:agrisync/App%20Pages/Analytics/AIChatbotPage.dart';
-import 'package:agrisync/App%20Pages/Analytics/AnalyticsPage.dart';
+import 'package:agrisync/App%20Pages/Weather/WeatherPage.dart';
 import 'package:agrisync/App%20Pages/MarketPlace/MarketPage.dart';
 import 'package:agrisync/App%20Pages/ProfilePage/ProfilePage.dart';
 import 'package:agrisync/App%20Pages/Analytics/YieldForecastPage.dart';
-import 'package:agrisync/App%20Pages/Weather/WeatherPage.dart';
-import 'package:flutter/material.dart';
-import 'package:curved_navigation_bar/curved_navigation_bar.dart';
+import 'package:agrisync/App%20Pages/Analytics/AIChatbotPage.dart';
+import 'package:agrisync/App%20Pages/Inventory/InventoryPage.dart';
 
 class CustomNavBar extends StatefulWidget {
   const CustomNavBar({Key? key}) : super(key: key);
@@ -17,19 +19,24 @@ class CustomNavBar extends StatefulWidget {
 
 class _CustomNavBarState extends State<CustomNavBar> {
   int _currentIndex = 0;
+
+  // 7 pages total
   final List<Widget> _pages = [
-    HomePage(),
-    const WeatherPage(),
-    const MarketPlacePage(),
-    const ProfilePage(),
-    const YieldForecastPage(),
-    const AIChatbotPage(),  
+    HomePage(),               // Index 0
+    const WeatherPage(),      // Index 1
+    const MarketPlacePage(),  // Index 2
+    const ProfilePage(),      // Index 3
+    const YieldForecastPage(),// Index 4
+    const AIChatbotPage(),    // Index 5
+    const InventoryPage(),    // Index 6
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // Display the currently selected page
       body: _pages[_currentIndex],
+
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: const Color.fromARGB(255, 58, 58, 58),
@@ -47,21 +54,25 @@ class _CustomNavBarState extends State<CustomNavBar> {
           ],
         ),
         child: CurvedNavigationBar(
-          
           height: 55,
           backgroundColor: Colors.transparent,
           color: Colors.transparent,
           buttonBackgroundColor: const Color.fromARGB(255, 98, 210, 201),
           animationDuration: const Duration(milliseconds: 300),
           animationCurve: Curves.easeInOut,
+
+          // 7 icons for 7 pages
           items: const <Widget>[
-            Icon(Icons.home, size: 25, color: Colors.white),
-            Icon(Icons.wb_sunny, size: 25, color: Colors.white),
-            Icon(Icons.shopping_cart, size: 25, color: Colors.white),
-            Icon(Icons.person, size: 25, color: Colors.white),
-            Icon(Icons.show_chart, size: 25, color: Colors.white),
-            Icon(Icons.chat, size: 25, color: Colors.white),   
+            Icon(Icons.home, size: 25, color: Colors.white),         // Index 0
+            Icon(Icons.wb_sunny, size: 25, color: Colors.white),     // Index 1
+            Icon(Icons.shopping_cart, size: 25, color: Colors.white),// Index 2
+            Icon(Icons.person, size: 25, color: Colors.white),       // Index 3
+            Icon(Icons.show_chart, size: 25, color: Colors.white),   // Index 4
+            Icon(Icons.chat, size: 25, color: Colors.white),         // Index 5
+            Icon(Icons.inventory_2, size: 25, color: Colors.white),  // Index 6
           ],
+
+          // Update the current index on tap
           onTap: (index) {
             setState(() {
               _currentIndex = index;
