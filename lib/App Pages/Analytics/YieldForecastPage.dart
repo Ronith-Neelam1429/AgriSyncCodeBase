@@ -17,7 +17,7 @@ class _YieldForecastPageState extends State<YieldForecastPage> {
   final _expectedYieldController = TextEditingController();
   String? _forecastResult;
   bool _isLoading = false;
-  final String weatherApiKey = 'eeaca43a04ac307588b75ac98f9871d7'; 
+  final String weatherApiKey = 'eeaca43a04ac307588b75ac98f9871d7';
 
   @override
   void initState() {
@@ -28,10 +28,7 @@ class _YieldForecastPageState extends State<YieldForecastPage> {
   Future<void> _loadUserData() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
-      final doc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .get();
+      final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
       if (doc.exists) {
         final data = doc.data() as Map<String, dynamic>;
         setState(() {
@@ -61,32 +58,25 @@ class _YieldForecastPageState extends State<YieldForecastPage> {
     }
 
     try {
-      // Fetch historical weather
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
-        final doc = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(user.uid)
-            .get();
+        final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
         if (doc.exists) {
           final data = doc.data() as Map<String, dynamic>;
-          final lat = data['lat'] ?? '51.5074'; // backup to London if error
+          final lat = data['lat'] ?? '51.5074';
           final lon = data['lon'] ?? '-0.1278';
 
-          final weatherUrl =
-              'https://api.openweathermap.org/data/2.5/weather?lat=$lat&lon=$lon&appid=$weatherApiKey&units=metric';
+          final weatherUrl = 'https://api.openweathermap.org/data/2.5/weather?lat=$lat&lon=$lon&appid=$weatherApiKey&units=metric';
           final weatherResponse = await http.get(Uri.parse(weatherUrl));
           if (weatherResponse.statusCode == 200) {
             final weatherData = json.decode(weatherResponse.body);
             final temp = weatherData['main']['temp'];
             final condition = weatherData['weather'][0]['main'];
 
-            // Simple revenue forecast model 
-            double marketPricePerUnit = _getMarketPrice(cropType); // Hypothetical prices
+            double marketPricePerUnit = _getMarketPrice(cropType);
             double weatherFactor = condition.contains('Rain') ? 1.1 : 0.9;
             double revenue = (expectedYield * farmSize * marketPricePerUnit) * weatherFactor;
 
-            // Save forecast to Firestore
             await FirebaseFirestore.instance.collection('forecasts').doc(user.uid).set({
               'farmSize': farmSize,
               'cropType': cropType,
@@ -97,7 +87,7 @@ class _YieldForecastPageState extends State<YieldForecastPage> {
 
             setState(() {
               _forecastResult =
-                  'Estimated Revenue: \$${revenue.toStringAsFixed(2)} based on $expectedYield tons/acre, $farmSize acres, and $condition weather at $temp°C';
+                  'Estimated Revenue: \$${revenue.toStringAsFixed(2)}\nBased on: $expectedYield tons/acre, $farmSize acres,\n$condition weather at $temp°C';
               _isLoading = false;
             });
           } else {
@@ -117,56 +107,107 @@ class _YieldForecastPageState extends State<YieldForecastPage> {
   }
 
   double _getMarketPrice(String cropType) {
-    // Hypothetical market prices (in $/ton)
     const Map<String, double> cropPrices = {
       'Corn': 200.0,
       'Soybeans': 400.0,
       'Wheat': 250.0,
     };
-    return cropPrices[cropType] ?? 300.0; // Default price if crop is not found
+    return cropPrices[cropType] ?? 300.0;
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Yield & Revenue Forecast'),
+        title: const Text('Yield & Revenue Forecast', style: TextStyle(color: Colors.black)),
+        backgroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.black),
+        elevation: 1,
       ),
+      backgroundColor: Colors.white,
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: _isLoading
             ? const Center(child: CircularProgressIndicator())
-            : Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  TextField(
-                    controller: _farmSizeController,
-                    decoration: const InputDecoration(labelText: 'Farm Size (acres)'),
-                    keyboardType: TextInputType.number,
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: _cropTypeController,
-                    decoration: const InputDecoration(labelText: 'Crop Type (e.g., Corn, Soybeans)'),
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: _expectedYieldController,
-                    decoration: const InputDecoration(labelText: 'Expected Yield (tons/acre)'),
-                    keyboardType: TextInputType.number,
-                  ),
-                  const SizedBox(height: 20),
-                  ElevatedButton(
-                    onPressed: _calculateForecast,
-                    child: const Text('Calculate Forecast'),
-                  ),
-                  const SizedBox(height: 20),
-                  if (_forecastResult != null)
-                    Text(
-                      _forecastResult!,
-                      style: const TextStyle(fontSize: 16),
+            : SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    TextField(
+                      controller: _farmSizeController,
+                      decoration: InputDecoration(
+                        labelText: 'Farm Size (acres)',
+                        labelStyle: const TextStyle(color: Colors.grey),
+                        filled: true,
+                        fillColor: Colors.grey[200],
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                      keyboardType: TextInputType.number,
                     ),
-                ],
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: _cropTypeController,
+                      decoration: InputDecoration(
+                        labelText: 'Crop Type (e.g., Corn, Soybeans)',
+                        labelStyle: const TextStyle(color: Colors.grey),
+                        filled: true,
+                        fillColor: Colors.grey[200],
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: _expectedYieldController,
+                      decoration: InputDecoration(
+                        labelText: 'Expected Yield (tons/acre)',
+                        labelStyle: const TextStyle(color: Colors.grey),
+                        filled: true,
+                        fillColor: Colors.grey[200],
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                      keyboardType: TextInputType.number,
+                    ),
+                    const SizedBox(height: 20),
+                    Center(
+                      child: ElevatedButton(
+                        onPressed: _calculateForecast,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color.fromARGB(255, 66, 192, 201),
+                          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 32),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        child: const Text('Calculate Forecast', style: TextStyle(color: Colors.white)),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    if (_forecastResult != null)
+                      Card(
+                        color: Colors.grey[100],
+                        elevation: 2,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Text(
+                            _forecastResult!,
+                            style: const TextStyle(fontSize: 16, color: Colors.black),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               ),
       ),
     );

@@ -36,6 +36,7 @@ dependencies:
   cloud_functions: ^5.3.4
   webview_flutter: ^4.10.0
   flutter_dotenv: ^5.2.1
+  table_calendar: ^3.0.8
   syncfusion_flutter_charts: ^28.2.12
 
 dev_dependencies:
