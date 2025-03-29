@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
-import 'package:webview_flutter/webview_flutter.dart';
 
 class SellerStripeConnect extends StatefulWidget {
   @override
@@ -15,8 +14,7 @@ class _SellerStripeConnectState extends State<SellerStripeConnect> {
   bool _isLoading = false;
   String? _stripeAccountId;
   String? _stripeAccountStatus;
-  final FirebaseFunctions _functions = FirebaseFunctions.instance;
-  final StripeService _stripeService = StripeService(useMock: false); // Use mock mode
+  final StripeService _stripeService = StripeService(useMock: false); 
 
   @override
   void initState() {
@@ -59,7 +57,6 @@ class _SellerStripeConnectState extends State<SellerStripeConnect> {
     }
   }
 
-  // In SellerStripeConnect.dart, modify _connectStripeAccount() method
   Future<void> _connectStripeAccount() async {
     setState(() => _isLoading = true);
     

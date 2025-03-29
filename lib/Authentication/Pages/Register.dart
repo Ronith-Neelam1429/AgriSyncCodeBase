@@ -370,26 +370,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 ),
               ),
             ),
-            OutlinedButton.icon(
-              onPressed: () {},
-              icon: Image.network(
-                'https://www.yahoo.com/favicon.ico',
-                height: 24,
-              ),
-              label: const Text(
-                'Yahoo',
-                style: TextStyle(color: Colors.grey),
-              ),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 12,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30),
-                ),
-              ),
-            ),
+            
           ],
         ),
       ],

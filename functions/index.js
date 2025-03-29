@@ -2,13 +2,9 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 const stripe = require('stripe')(functions.config().stripe.secret_key);
-const cors = require('cors')({ origin: true });
 
 admin.initializeApp();
 
-/**
- * Creates a Stripe Connect Express account for a seller
- */
 exports.createConnectAccount = functions.https.onCall(async (data, context) => {
   // Check if user is authenticated
   if (!context.auth) {
