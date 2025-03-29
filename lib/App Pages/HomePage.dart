@@ -38,7 +38,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   String? userLon;
   final String weatherApiKey = 'eeaca43a04ac307588b75ac98f9871d7';
 
-  // Today's Updates carousel controller
+  // Today's Updates carousel controller (no longer used)
   final PageController _updatesPageController = PageController();
   int _currentPage = 0;
 
@@ -245,7 +245,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             {
               'role': 'user',
               'content':
-                  'Provide a concise, actionable farming tip for a farmer in $_userCity, where the current weather is ${currentWeather!['weather'][0]['main']} with a temperature of ${currentWeather!['main']['temp']}°C. Ensure that there is no markdown text, and the tip is concise. Make the tip good based off the weather and other statistics given',
+                  'Provide a concise, actionable farming tip for a farmer in $_userCity, where the current weather is ${currentWeather!['weather'][0]['main']} with a temperature of ${currentWeather!['main']['temp']}°C. Ensure that there is no markdown text, and the tip is concise. Make the tip good based off the weather and other statistics given.',
             },
           ],
           'max_tokens': 100,
@@ -493,7 +493,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                         ],
                       ),
                     ),
-            
                     const SizedBox(width: 8),
                     // Settings icon
                     Container(
@@ -509,7 +508,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
               ),
               const SizedBox(height: 10),
               const Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 15),
+                padding: EdgeInsets.symmetric(horizontal: 15),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -533,42 +532,27 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                   ],
                 ),
               ),
-              // Replace the PageView implementation with this:
+              // Instead of swiping, display the Weather Card and then the AI Tip Card in a Column
               if (_isLoadingLocation)
                 const Center(child: CircularProgressIndicator())
               else if (_userCity != null)
                 Padding(
                   padding: const EdgeInsets.only(top: 8.0),
-                  child: SizedBox(
-                    height: 200, // Adjust height as needed
-                    child: PageView(
-                      controller: _updatesPageController,
-                      onPageChanged: (int page) {
-                        setState(() {
-                          _currentPage = page;
-                        });
-                      },
-                      children: [
-                        // Weather Card
-                        Center(
-                          child: WeatherCard(
-                            apiKey: 'eeaca43a04ac307588b75ac98f9871d7',
-                            city: _userCity!,
-                          ),
-                        ),
-                        // AI Tip Card - Only build if animation is initialized
-                        if (_tipAnimationController.isAnimating ||
-                            _tipAnimationController.status !=
-                                AnimationStatus.dismissed)
-                          _buildAITipCard()
-                        else
-                          Center(child: CircularProgressIndicator()),
-                      ],
-                    ),
+                  child: Column(
+                    children: [
+                      // Weather Card takes up part of the screen
+                      WeatherCard(
+                        apiKey: 'eeaca43a04ac307588b75ac98f9871d7',
+                        city: _userCity!,
+                      ),
+                      const SizedBox(height: 16),
+                      // AI Tip Card takes up more space below
+                      _buildAITipCard(),
+                    ],
                   ),
                 ),
               const Padding(
-                padding: const EdgeInsets.only(left: 15, top: 15),
+                padding: EdgeInsets.only(left: 15, top: 15),
                 child: Text(
                   "Tools for you",
                   style: TextStyle(
@@ -589,7 +573,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                         ToolTile(
                           title: "Forum",
                           icon: const Icon(
-                            Icons.forum_outlined, // Using forum icon
+                            Icons.forum_outlined,
                             size: 23,
                             color: Color.fromARGB(255, 66, 192, 201),
                           ),
@@ -605,18 +589,18 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                         ToolTile(
                           title: "Inventory",
                           icon: const Icon(
-                            Icons.inventory, // Using forum icon
+                            Icons.inventory,
                             size: 23,
                             color: Color.fromARGB(255, 66, 192, 201),
                           ),
                           onTap: () {
-                            // Navigate to Forum page
+                            // Navigate to Inventory page
                           },
                         ),
                         ToolTile(
                           title: "AR",
                           icon: const Icon(
-                            Icons.view_in_ar, 
+                            Icons.view_in_ar,
                             size: 23,
                             color: Color.fromARGB(255, 66, 192, 201),
                           ),
@@ -632,12 +616,11 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                         ToolTile(
                           title: "Tasks",
                           icon: const Icon(
-                            Icons.calendar_today, // Using forum icon
+                            Icons.calendar_today,
                             size: 23,
                             color: Color.fromARGB(255, 66, 192, 201),
                           ),
                           onTap: () {
-                            // Navigate to Forum page
                             Navigator.push(
                               context,
                               MaterialPageRoute(
@@ -649,12 +632,12 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                         ToolTile(
                           title: "Crop Health",
                           icon: const Icon(
-                            Icons.health_and_safety, // Using forum icon
+                            Icons.health_and_safety,
                             size: 23,
                             color: Color.fromARGB(255, 66, 192, 201),
                           ),
                           onTap: () {
-                            // Navigate to Forum page
+                            // Navigate to Crop Health page
                           },
                         ),
                         ToolTile(
