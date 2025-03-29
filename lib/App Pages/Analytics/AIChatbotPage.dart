@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:permission_handler/permission_handler.dart';
+import 'package:agrisync/App Pages/Weather/LocationService.dart';
 
 class AIChatbotPage extends StatefulWidget {
   const AIChatbotPage({super.key});
@@ -16,17 +17,70 @@ class AIChatbotPage extends StatefulWidget {
 class _AIChatbotPageState extends State<AIChatbotPage> {
   final _questionController = TextEditingController();
   final List<Map<String, String>> _chatHistory = [];
+  final ScrollController _scrollController = ScrollController();
   bool _isLoading = false;
   bool _isListening = false;
   late stt.SpeechToText _speech;
-  String? _lastRecognizedWords;
-  final String aiApiKey = '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';
+  final String aiApiKey =
+      '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';
+  String _userContext = "";
+  String _userFirstName = "Farmer";
+  String _weatherInfo = "";
+  final String weatherApiKey = 'eeaca43a04ac307588b75ac98f9871d7';
 
   @override
   void initState() {
     super.initState();
     _speech = stt.SpeechToText();
     _requestMicrophonePermission();
+    _loadUserAndWeatherInfo();
+  }
+
+  Future<void> _loadUserAndWeatherInfo() async {
+    // Load user info
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      try {
+        final doc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .get();
+        if (doc.exists) {
+          final data = doc.data() as Map<String, dynamic>;
+          _userFirstName = data['firstName'] ?? "Farmer";
+          _userContext =
+              "Location: ${data['location'] ?? 'unknown'}, Farm Size: ${data['farmSize'] ?? 'unknown'}, Preferred Crops: ${(data['preferredCrops'] as List?)?.join(', ') ?? 'unknown'}.";
+        }
+      } catch (e) {
+        debugPrint("Error loading user info: $e");
+      }
+      // Load current weather info
+      try {
+        final location = await LocationService.getCurrentLocation();
+        if (location != null) {
+          final lat = location['latitude'];
+          final lon = location['longitude'];
+          final url =
+              'https://api.openweathermap.org/data/2.5/weather?lat=$lat&lon=$lon&appid=$weatherApiKey&units=metric';
+          final response = await http.get(Uri.parse(url));
+          if (response.statusCode == 200) {
+            final weatherData = json.decode(response.body);
+            final temp = weatherData['main']['temp'];
+            final condition = weatherData['weather'][0]['main'];
+            _weatherInfo = "Weather: $condition at ${temp}°C.";
+          }
+        }
+      } catch (e) {
+        debugPrint("Error loading weather info: $e");
+      }
+    }
+    setState(() {
+      _chatHistory.insert(0, {
+        'sender': 'bot',
+        'message':
+            "Hi $_userFirstName, $_weatherInfo How can I assist you with your farm today?"
+      });
+    });
   }
 
   Future<void> _requestMicrophonePermission() async {
@@ -39,50 +93,44 @@ class _AIChatbotPageState extends State<AIChatbotPage> {
   Future<void> _startListening() async {
     if (!_isListening) {
       bool available = await _speech.initialize(
-        onStatus: (status) => print('Speech status: $status'),
-        onError: (error) => print('Speech error: $error'),
+        onStatus: (status) => debugPrint('Speech status: $status'),
+        onError: (error) => debugPrint('Speech error: $error'),
       );
       if (available) {
-        setState(() => _isListening = true);
+        setState(() {
+          _isListening = true;
+        });
         _speech.listen(onResult: (result) {
           setState(() {
-            _lastRecognizedWords = result.recognizedWords;
-            _questionController.text = _lastRecognizedWords ?? '';
+            _questionController.text = result.recognizedWords;
           });
         });
       }
     } else {
       _speech.stop();
-      setState(() => _isListening = false);
+      setState(() {
+        _isListening = false;
+      });
     }
   }
 
   Future<void> _getAIResponse() async {
-    setState(() {
-      _isLoading = true;
-    });
     final question = _questionController.text.trim();
     if (question.isEmpty) {
-      setState(() {
-        _isLoading = false;
-        _chatHistory.add({'user': question, 'bot': 'Please enter a question!'});
-      });
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text("Please enter a question")));
       return;
     }
+    setState(() {
+      _chatHistory.add({'sender': 'user', 'message': question});
+      _isLoading = true;
+    });
+    _questionController.clear();
+    _scrollToBottom();
 
-    final user = FirebaseAuth.instance.currentUser;
-    String userContext = '';
-    if (user != null) {
-      final doc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .get();
-      if (doc.exists) {
-        final data = doc.data() as Map<String, dynamic>;
-        userContext =
-            'User is a farmer with location: ${data['location'] ?? 'unknown'}, farm size: ${data['farmSize'] ?? 'unknown'}, and prefers crops: ${data['preferredCrops']?.join(', ') ?? 'unknown'}.';
-      }
-    }
+    // Prepare enriched system prompt
+    String systemPrompt =
+        "You are an expert AI assistant specialized in agriculture. Context: $_userContext. Also note: $_weatherInfo. Provide a direct, concise answer without any markdown formatting.";
 
     try {
       final response = await http.post(
@@ -90,91 +138,151 @@ class _AIChatbotPageState extends State<AIChatbotPage> {
         headers: {
           'Authorization': 'Bearer $aiApiKey',
           'HTTP-Referer': 'https://agrisync-app.com',
-          'X-Title': 'AgriSync', 
+          'X-Title': 'AgriSync',
           'Content-Type': 'application/json',
         },
         body: jsonEncode({
           'model': 'meta-llama/llama-3.2-3b-instruct:free',
           'messages': [
-            {'role': 'system', 'content': userContext},
+            {'role': 'system', 'content': systemPrompt},
             {'role': 'user', 'content': question},
           ],
           'max_tokens': 200,
         }),
       );
-
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         final botResponse = data['choices'][0]['message']['content'].trim();
         setState(() {
-          _chatHistory.add({'user': question, 'bot': botResponse});
+          _chatHistory.add({'sender': 'bot', 'message': botResponse});
           _isLoading = false;
-          _questionController.clear();
         });
+        _scrollToBottom();
       } else {
         setState(() {
-          _chatHistory.add({'user': question, 'bot': 'Error: Unable to get response.'});
+          _chatHistory.add({
+            'sender': 'bot',
+            'message': 'Error: Unable to get response. Please try again.'
+          });
           _isLoading = false;
         });
+        _scrollToBottom();
       }
     } catch (e) {
       setState(() {
-        _chatHistory.add({'user': question, 'bot': 'Error: $e'});
+        _chatHistory
+            .add({'sender': 'bot', 'message': 'Error: ${e.toString()}'});
         _isLoading = false;
       });
+      _scrollToBottom();
     }
+  }
+
+  void _scrollToBottom() {
+    Future.delayed(const Duration(milliseconds: 300), () {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
+
+  Widget _buildChatBubble(Map<String, String> chat) {
+    bool isUser = chat['sender'] == 'user';
+    Alignment alignment =
+        isUser ? Alignment.centerRight : Alignment.centerLeft;
+    Color bubbleColor =
+        isUser ? Colors.grey[300]! : const Color.fromARGB(255, 66, 192, 201);
+    TextStyle textStyle = isUser
+        ? const TextStyle(color: Colors.black)
+        : const TextStyle(color: Colors.white);
+    EdgeInsets margin = isUser
+        ? const EdgeInsets.only(top: 8, bottom: 8, left: 50, right: 8)
+        : const EdgeInsets.only(top: 8, bottom: 8, left: 8, right: 50);
+    return Align(
+      alignment: alignment,
+      child: Container(
+        margin: margin,
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+        decoration: BoxDecoration(
+          color: bubbleColor,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Text(
+          chat['message']!,
+          style: textStyle,
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('AI Farming Assistant'),
+        title:
+            const Text('AI Farming Assistant', style: TextStyle(color: Colors.black)),
+        backgroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.black),
+        elevation: 1,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            Expanded(
-              child: ListView.builder(
-                itemCount: _chatHistory.length,
-                itemBuilder: (context, index) {
-                  final chat = _chatHistory[index];
-                  return Column(
-                    crossAxisAlignment: chat['user']!.isNotEmpty ? CrossAxisAlignment.start : CrossAxisAlignment.end,
-                    children: [
-                      if (chat['user']!.isNotEmpty)
-                        Text('You: ${chat['user']}', style: const TextStyle(fontWeight: FontWeight.bold)),
-                      if (chat['bot']!.isNotEmpty)
-                        Text('Bot: ${chat['bot']}', style: const TextStyle(color: Colors.green)),
-                      const SizedBox(height: 8),
-                    ],
-                  );
-                },
-              ),
+      body: Column(
+        children: [
+          Expanded(
+            child: ListView.builder(
+              controller: _scrollController,
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+              itemCount: _chatHistory.length,
+              itemBuilder: (context, index) {
+                return _buildChatBubble(_chatHistory[index]);
+              },
             ),
-            Row(
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            color: Colors.white,
+            child: Row(
               children: [
                 Expanded(
                   child: TextField(
                     controller: _questionController,
-                    decoration: const InputDecoration(hintText: 'Ask a farming question...'),
+                    decoration: InputDecoration(
+                      hintText: 'Ask a farming question...',
+                      hintStyle: TextStyle(color: Colors.grey[400]),
+                      filled: true,
+                      fillColor: Colors.grey[200],
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(30),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
                   ),
                 ),
+                const SizedBox(width: 8),
                 IconButton(
-                  icon: Icon(_isListening ? Icons.mic_off : Icons.mic),
+                  icon: Icon(_isListening ? Icons.mic_off : Icons.mic,
+                      color: const Color.fromARGB(255, 66, 192, 201)),
                   onPressed: _startListening,
-                  color: _isListening ? Colors.red : Colors.blue,
                 ),
                 IconButton(
-                  icon: const Icon(Icons.send),
+                  icon: const Icon(Icons.send, color: Color.fromARGB(255, 66, 192, 201)),
                   onPressed: _isLoading ? null : _getAIResponse,
                 ),
               ],
             ),
-            if (_isLoading) const LinearProgressIndicator(),
-          ],
-        ),
+          ),
+          if (_isLoading)
+            const LinearProgressIndicator(
+              minHeight: 2,
+              backgroundColor: Colors.grey,
+              valueColor: AlwaysStoppedAnimation<Color>(Color.fromARGB(255, 66, 192, 201)),
+            ),
+        ],
       ),
     );
   }
@@ -183,6 +291,7 @@ class _AIChatbotPageState extends State<AIChatbotPage> {
   void dispose() {
     _questionController.dispose();
     _speech.stop();
+    _scrollController.dispose();
     super.dispose();
   }
 }
