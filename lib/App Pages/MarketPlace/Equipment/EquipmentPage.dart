@@ -51,7 +51,10 @@ class _EquipmentPageState extends State<EquipmentPage> {
             name: data['name'] as String? ?? '',
             price: price,
             condition: data['condition'] as String? ?? '',
-            imageUrl: data['imageURL'] as String? ?? '',
+            // Add null check and fallback
+            imageUrl: (data['imageURL'] as String?)?.isNotEmpty == true
+                ? data['imageURL']
+                : 'https://via.placeholder.com/150',
             list: data['list'] as String? ?? '',
             category: data['category'] as String? ?? '',
             retailURL: data['retailURL'] as String? ?? '',
@@ -163,7 +166,6 @@ class _EquipmentPageState extends State<EquipmentPage> {
               ),
             ),
           ),
-      
 
           // Listings Grid
           StreamBuilder<List<EquipmentListing>>(
@@ -229,24 +231,39 @@ class _EquipmentPageState extends State<EquipmentPage> {
                             children: [
                               // Image container with fixed or proportional height
                               Expanded(
-                                flex: 3, // Allocate 3/5 of space to image
-                                child: ClipRRect(
-                                  borderRadius: const BorderRadius.vertical(
-                                    top: Radius.circular(8),
-                                  ),
-                                  child: Image.network(
-                                    listing.imageUrl,
-                                    width: double.infinity,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) {
-                                      return Container(
-                                        color: Colors.grey[300],
-                                        child: const Icon(Icons.error),
-                                      );
-                                    },
-                                  ),
-                                ),
-                              ),
+                                  flex: 3, // Allocate 3/5 of space to image
+                                  child: ClipRRect(
+                                      borderRadius: const BorderRadius.vertical(
+                                        top: Radius.circular(8),
+                                      ),
+                                      child: Image.network(
+                                        listing.imageUrl,
+                                        fit: BoxFit.cover,
+                                        errorBuilder:
+                                            (context, error, stackTrace) {
+                                          return Image.asset(
+                                            'assets/images/placeholder.png',
+                                            fit: BoxFit.cover,
+                                          );
+                                        },
+                                        loadingBuilder:
+                                            (context, child, loadingProgress) {
+                                          if (loadingProgress == null)
+                                            return child;
+                                          return Center(
+                                            child: CircularProgressIndicator(
+                                              value: loadingProgress
+                                                          .expectedTotalBytes !=
+                                                      null
+                                                  ? loadingProgress
+                                                          .cumulativeBytesLoaded /
+                                                      loadingProgress
+                                                          .expectedTotalBytes!
+                                                  : null,
+                                            ),
+                                          );
+                                        },
+                                      ))),
                               // Text content with flexible height
                               Expanded(
                                 flex:

@@ -7,8 +7,7 @@ class EquipmentListing {
   final String category;
   final String retailURL;
   final String retailer;
-  final String listedBy; 
-
+  final String listedBy;
 
   EquipmentListing({
     required this.name,
@@ -19,7 +18,14 @@ class EquipmentListing {
     required this.category,
     required this.retailURL,
     required this.retailer,
-    required this.listedBy, 
-
+    required this.listedBy,
   });
+  @override
+  String toString() {
+    return 'EquipmentListing{'
+        'name: $name, '
+        'price: $price, '
+        'imageUrl: $imageUrl'
+        '}';
+  }
 }

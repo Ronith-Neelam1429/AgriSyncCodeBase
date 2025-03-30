@@ -44,14 +44,31 @@ class ItemPage extends StatelessWidget {
               ),
               child: Image.network(
                 item.imageUrl,
-                fit: BoxFit.contain,
-                errorBuilder: (context, error, stackTrace) {
-                  return const Center(
-                    child: Icon(
-                      Icons.error_outline,
-                      size: 50,
-                      color: Colors.grey,
+                fit: BoxFit.cover,
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return Center(
+                    child: CircularProgressIndicator(
+                      value: loadingProgress.expectedTotalBytes != null
+                          ? loadingProgress.cumulativeBytesLoaded /
+                              loadingProgress.expectedTotalBytes!
+                          : null,
                     ),
+                  );
+                },
+                errorBuilder: (context, error, stackTrace) {
+                  return Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.error_outline,
+                          size: 50, color: Colors.grey),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Failed to load image\n${item.imageUrl}',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: Colors.grey),
+                      ),
+                    ],
                   );
                 },
               ),

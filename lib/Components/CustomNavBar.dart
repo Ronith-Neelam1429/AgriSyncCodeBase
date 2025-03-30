@@ -22,13 +22,11 @@ class _CustomNavBarState extends State<CustomNavBar> {
 
   // 7 pages total
   final List<Widget> _pages = [
-    HomePage(),               // Index 0
-    const WeatherPage(),      // Index 1
-    const MarketPlacePage(),  // Index 2
-    const ProfilePage(),      // Index 3
-    const YieldForecastPage(),// Index 4
-    const AIChatbotPage(),    // Index 5
-    const InventoryPage(),    // Index 6
+    HomePage(),
+    const MarketPlacePage(),
+    const AIChatbotPage(),
+    const ProfilePage(),
+    //const YieldForecastPage(),
   ];
 
   @override
@@ -63,13 +61,11 @@ class _CustomNavBarState extends State<CustomNavBar> {
 
           // 7 icons for 7 pages
           items: const <Widget>[
-            Icon(Icons.home, size: 25, color: Colors.white),         // Index 0
-            Icon(Icons.wb_sunny, size: 25, color: Colors.white),     // Index 1
-            Icon(Icons.shopping_cart, size: 25, color: Colors.white),// Index 2
-            Icon(Icons.person, size: 25, color: Colors.white),       // Index 3
-            Icon(Icons.show_chart, size: 25, color: Colors.white),   // Index 4
-            Icon(Icons.chat, size: 25, color: Colors.white),         // Index 5
-            Icon(Icons.inventory_2, size: 25, color: Colors.white),  // Index 6
+            Icon(Icons.home, size: 25, color: Colors.white),
+            Icon(Icons.shopping_cart, size: 25, color: Colors.white),
+            Icon(Icons.chat, size: 25, color: Colors.white),
+            Icon(Icons.person, size: 25, color: Colors.white),
+            //Icon(Icons.show_chart, size: 25, color: Colors.white),
           ],
 
           // Update the current index on tap

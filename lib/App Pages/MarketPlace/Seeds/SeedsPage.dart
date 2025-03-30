@@ -55,7 +55,8 @@ class _SeedsPageState extends State<SeedsPage> {
             list: data['list'] as String? ?? '',
             category: data['category'] as String? ?? '',
             retailURL: data['retailURL'] as String? ?? '',
-            retailer: data['retailer'] as String? ?? '', listedBy: '',
+            retailer: data['retailer'] as String? ?? '',
+            listedBy: '',
           );
 
           if (listing.price >= _priceRange.start &&
@@ -239,7 +240,18 @@ class _SeedsPageState extends State<SeedsPage> {
                                     errorBuilder: (context, error, stackTrace) {
                                       return Container(
                                         color: Colors.grey[300],
-                                        child: const Icon(Icons.error),
+                                        child: Column(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: const [
+                                            Icon(Icons.photo,
+                                                size: 40, color: Colors.grey),
+                                            SizedBox(height: 4),
+                                            Text('No Image',
+                                                style: TextStyle(
+                                                    color: Colors.grey)),
+                                          ],
+                                        ),
                                       );
                                     },
                                   ),
