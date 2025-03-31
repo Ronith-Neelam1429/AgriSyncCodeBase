@@ -815,7 +815,7 @@ Stream<QuerySnapshot> _getUpcomingEvents() {
             size: 30,
           ),
           Text(
-            '${(temp.round() * 1.8 + 32)}°F',
+            '${(temp * 1.8 + 32).round()}°F',
             style: const TextStyle(color: Colors.white, fontSize: 16),
           ),
         ],
@@ -1095,7 +1095,7 @@ Stream<QuerySnapshot> _getUpcomingEvents() {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     const Text(
-                      "Recent Activity",
+                      "4 Day Forecast",
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.bold,

@@ -52,9 +52,12 @@ class _EquipmentPageState extends State<EquipmentPage> {
             price: price,
             condition: data['condition'] as String? ?? '',
             // Add null check and fallback
-            imageUrl: (data['imageURL'] as String?)?.isNotEmpty == true
-                ? data['imageURL']
-                : 'https://via.placeholder.com/150',
+            imageUrl: (data['imageUrl'] as String?)?.isNotEmpty == true
+                ? data['imageUrl']
+                : (data['imageURL'] as String?)?.isNotEmpty ==
+                        true // Fallback to typo version
+                    ? data['imageURL']
+                    : 'https://via.placeholder.com/150',
             list: data['list'] as String? ?? '',
             category: data['category'] as String? ?? '',
             retailURL: data['retailURL'] as String? ?? '',
@@ -241,9 +244,9 @@ class _EquipmentPageState extends State<EquipmentPage> {
                                         fit: BoxFit.cover,
                                         errorBuilder:
                                             (context, error, stackTrace) {
-                                          return Image.asset(
-                                            'assets/images/placeholder.png',
-                                            fit: BoxFit.cover,
+                                          return Center(
+                                            child: Icon(Icons.error,
+                                                color: Colors.grey),
                                           );
                                         },
                                         loadingBuilder:

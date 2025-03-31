@@ -55,3 +55,4 @@ flutter:
     - assets/photo.png
     - lib/.env
     - assets/tractor.glb
+    - assets/placeholder.png
