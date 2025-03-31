@@ -179,9 +179,9 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       } else {
         print('No location data received, using default city');
         setState(() {
-          _userCity = 'London'; // Default city
-          userLat = '51.5074'; // Default coordinates for London
-          userLon = '0.1278';
+          _userCity = 'Bothell'; // Default city
+          userLat = '47.7601'; // Default coordinates for Bothell
+          userLon = '122.2054';
           _isLoadingLocation = false;
         });
 
@@ -192,9 +192,9 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     } catch (e) {
       print('Error updating location: $e');
       setState(() {
-        _userCity = 'London'; // Default city
-        userLat = '51.5074'; // Default coordinates for London
-        userLon = '0.1278';
+        _userCity = 'Bothell'; // Default city
+        userLat = '47.7601'; // Default coordinates for Bothell
+        userLon = '122.2054';
         _isLoadingLocation = false;
       });
 
@@ -424,7 +424,11 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       margin: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
-        color: Colors.white,
+        color: const Color.fromARGB(255, 255, 255, 255),
+        border: Border.all(
+          color: const Color.fromARGB(255, 87, 189, 179),
+          width: 1,
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.grey.withOpacity(0.2),
@@ -521,22 +525,22 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   }
 
   // Add to _HomePageState class in HomePage.dart
-Stream<QuerySnapshot> _getUpcomingEvents() {
-  final user = FirebaseAuth.instance.currentUser;
-  if (user == null) return const Stream.empty();
+  Stream<QuerySnapshot> _getUpcomingEvents() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return const Stream.empty();
 
-  DateTime startDate = DateTime.now().subtract(const Duration(days: 7));
-  DateTime endDate = startDate.add(const Duration(days: 35));
+    DateTime startDate = DateTime.now().subtract(const Duration(days: 7));
+    DateTime endDate = startDate.add(const Duration(days: 35));
 
-  return FirebaseFirestore.instance
-      .collection('farmActivities')
-      .doc(user.uid)
-      .collection('events')
-      .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate))
-      .where('date', isLessThanOrEqualTo: Timestamp.fromDate(endDate))
-      .orderBy('date', descending: false)
-      .snapshots();
-}
+    return FirebaseFirestore.instance
+        .collection('farmActivities')
+        .doc(user.uid)
+        .collection('events')
+        .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate))
+        .where('date', isLessThanOrEqualTo: Timestamp.fromDate(endDate))
+        .orderBy('date', descending: false)
+        .snapshots();
+  }
 
   Widget _buildSchedule() {
     return StreamBuilder<QuerySnapshot>(
@@ -1133,7 +1137,8 @@ Stream<QuerySnapshot> _getUpcomingEvents() {
                   ),
                 ),
               ),
-              _buildWeeklySchedule()
+              _buildWeeklySchedule(),
+              const SizedBox(height: 25),
             ],
           ),
         ),
