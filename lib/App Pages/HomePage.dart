@@ -6,7 +6,6 @@ import 'package:agrisync/App%20Pages/Calendar/FarmCalendarPage.dart';
 import 'package:agrisync/App%20Pages/Inventory/InventoryPage.dart';
 import 'package:agrisync/App%20Pages/Weather/LocationService.dart';
 import 'package:agrisync/App%20Pages/Weather/WeatherCard.dart';
-import 'package:agrisync/Components/TaskScheduler.dart';
 import 'package:agrisync/Components/ToolTile.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
