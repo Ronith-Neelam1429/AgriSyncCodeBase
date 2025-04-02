@@ -22,7 +22,7 @@ class _AIChatbotPageState extends State<AIChatbotPage> {
   bool _isListening = false;
   late stt.SpeechToText _speech;
   final String aiApiKey =
-      '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';
+      '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';
   String _userContext = "";
   String _userFirstName = "Farmer";
   String _weatherInfo = "";
