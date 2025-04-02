@@ -39,6 +39,7 @@ dependencies:
   flutter_dotenv: ^5.2.1
   table_calendar: ^3.0.8
   syncfusion_flutter_charts: ^28.2.12
+  flutter_image_compress: ^2.4.0
 
 dev_dependencies:
   flutter_test:

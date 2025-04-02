@@ -46,7 +46,8 @@ class _PlantMaturityDetectorPageState extends State<PlantMaturityDetectorPage> {
     }
   }
 
-  Future<void> _analyzeImage() async {
+  // In your Flutter app, modify the _analyzeImage function:
+Future<void> _analyzeImage() async {
   if (_imageFile == null) return;
 
   setState(() {
@@ -57,186 +58,210 @@ class _PlantMaturityDetectorPageState extends State<PlantMaturityDetectorPage> {
   try {
     // Read the image bytes
     final imageBytes = await _imageFile!.readAsBytes();
-    
-    // Use flutter_image_compress more efficiently by compressing to bytes directly
+
+    // Use flutter_image_compress to make the image smaller
     final compressedBytes = await FlutterImageCompress.compressWithList(
       imageBytes,
       minWidth: 224,
       minHeight: 224,
-      quality: 80,
+      quality: 60, // Lower quality for smaller size
       format: CompressFormat.jpeg,
     );
-    
-    // Split the image into chunks if it's still too large
+
+    // Encode as base64 and send directly to the predictImage endpoint
     final base64Image = base64Encode(compressedBytes);
     
-    // If the image is still large, consider splitting it into chunks
-    if (base64Image.length > 500000) {
-      // Use the chunk-based upload approach
-      await _uploadInChunks(compressedBytes);
-    } else {
-      // Use the direct approach for smaller images
-      final response = await http.post(
-        Uri.parse('https://us-central1-agrisync-9f9e5.cloudfunctions.net/predictImage'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'image': base64Image}),
-      ).timeout(const Duration(seconds: 60)); // Increase timeout
-      
-      if (response.statusCode == 200) {
-        setState(() {
-          _predictionResult = jsonDecode(response.body);
-          _isLoading = false;
-        });
-      } else {
-        setState(() {
-          _errorMessage = 'Server error: ${response.statusCode}';
-          _isLoading = false;
-        });
-      }
-    }
-  } catch (e) {
-    setState(() {
-      _errorMessage = 'Error analyzing image: $e';
-      _isLoading = false;
-    });
-  }
-}
-
-// New function to handle larger images by splitting them into chunks
-Future<void> _uploadInChunks(List<int> imageBytes) async {
-  final sessionId = DateTime.now().millisecondsSinceEpoch.toString();
-  final chunkSize = 250000; // ~250KB chunks
-  final totalChunks = (imageBytes.length / chunkSize).ceil();
-  
-  try {
-    // Upload each chunk
-    for (int i = 0; i < totalChunks; i++) {
-      final start = i * chunkSize;
-      final end = (i + 1) * chunkSize > imageBytes.length 
-          ? imageBytes.length 
-          : (i + 1) * chunkSize;
-      
-      final chunk = imageBytes.sublist(start, end);
-      final base64Chunk = base64Encode(chunk);
-      
-      // Send chunk
-      final response = await http.post(
-        Uri.parse('https://us-central1-agrisync-9f9e5.cloudfunctions.net/uploadImageChunk'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'sessionId': sessionId,
-          'chunkIndex': i,
-          'totalChunks': totalChunks,
-          'chunk': base64Chunk
-        }),
-      );
-      
-      if (response.statusCode != 200) {
-        throw Exception('Failed to upload chunk $i');
-      }
-    }
-    
-    // Process the complete image once all chunks are uploaded
     final response = await http.post(
-      Uri.parse('https://us-central1-agrisync-9f9e5.cloudfunctions.net/processSessionImage'),
+      Uri.parse('https://predictimage-k3urlognnq-uc.a.run.app?key=AIzaSyDjYO5h45w_Thg5itetAsfj3kekin0og_4'),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'sessionId': sessionId}),
+      body: jsonEncode({'image': base64Image}),
     );
-    
+
     if (response.statusCode == 200) {
       setState(() {
         _predictionResult = jsonDecode(response.body);
         _isLoading = false;
       });
     } else {
-      throw Exception('Failed to process image: ${response.statusCode}');
+      print('Error: ${response.statusCode} - ${response.body}');
+      setState(() {
+        _errorMessage = 'Server error: ${response.body}';
+        _isLoading = false;
+      });
     }
   } catch (e) {
     setState(() {
-      _errorMessage = 'Error uploading image chunks: $e';
+      _errorMessage = 'Error: $e';
       _isLoading = false;
     });
   }
 }
-  Widget _buildPredictionResult() {
-    if (_predictionResult == null) return const SizedBox.shrink();
 
-    // Get prediction data
-    List<double> predictions =
-        List<double>.from(_predictionResult!['predictions']);
+// New function to handle larger images by splitting them into chunks
+  Future<void> _uploadInChunks(List<int> imageBytes) async {
+  setState(() {
+    _errorMessage = null;
+    _isLoading = true;
+  });
+  
+  final sessionId = DateTime.now().millisecondsSinceEpoch.toString();
+  final chunkSize = 250000; // ~250KB chunks
+  final totalChunks = (imageBytes.length / chunkSize).ceil();
 
-    // Find highest confidence prediction
-    int maxIndex = 0;
-    double maxValue = predictions[0];
+  try {
+    // Upload each chunk
+    for (int i = 0; i < totalChunks; i++) {
+      final start = i * chunkSize;
+      final end = (i + 1) * chunkSize > imageBytes.length
+          ? imageBytes.length
+          : (i + 1) * chunkSize;
 
-    for (int i = 1; i < predictions.length; i++) {
-      if (predictions[i] > maxValue) {
-        maxValue = predictions[i];
-        maxIndex = i;
+      final chunk = imageBytes.sublist(start, end);
+      final base64Chunk = base64Encode(chunk);
+
+      print('Uploading chunk ${i+1} of $totalChunks (size: ${chunk.length} bytes)');
+      
+      // Send chunk
+      final response = await http.post(
+        Uri.parse(
+            'https://uploadimagechunk-k3urlognnq-uc.a.run.app?key=AIzaSyDjYO5h45w_Thg5itetAsfj3kekin0og_4'),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'sessionId': sessionId,
+          'chunkIndex': i,
+          'totalChunks': totalChunks,
+          'chunk': base64Chunk
+        }),
+      ).timeout(const Duration(seconds: 30));
+
+      if (response.statusCode != 200) {
+        print('Error response: ${response.body}');
+        throw Exception('Failed to upload chunk $i: ${response.statusCode} - ${response.body}');
       }
     }
 
-    String result = _labels[maxIndex];
-    double confidence = maxValue * 100;
+    print('All chunks uploaded, processing complete image');
+    
+    // Process the complete image once all chunks are uploaded
+    final response = await http.post(
+      Uri.parse(
+          'https://processsessionimage-k3urlognnq-uc.a.run.app?key=AIzaSyDjYO5h45w_Thg5itetAsfj3kekin0og_4'),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({'sessionId': sessionId}),
+    ).timeout(const Duration(seconds: 60));
 
-    // Build result UI
-    Color resultColor = result == "Mature" ? Colors.green : Colors.orange;
-
-    return Card(
-      margin: const EdgeInsets.all(16),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Text(
-              'Analysis Result',
-              style: Theme.of(context as BuildContext).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Icon(
-                  result == "Mature" ? Icons.check_circle : Icons.warning,
-                  color: resultColor,
-                  size: 36,
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        result,
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: resultColor,
-                        ),
-                      ),
-                      Text(
-                        'Confidence: ${confidence.toStringAsFixed(1)}%',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Text(
-              result == "Mature"
-                  ? 'This fruit/vegetable appears to be at optimal maturity for harvest.'
-                  : 'This fruit/vegetable appears to be over mature and may need immediate attention.',
-              style: TextStyle(fontSize: 16),
-            ),
-          ],
-        ),
-      ),
-    );
+    if (response.statusCode == 200) {
+      setState(() {
+        _predictionResult = jsonDecode(response.body);
+        _isLoading = false;
+      });
+    } else {
+      print('Process session error: ${response.statusCode} - ${response.body}');
+      throw Exception('Failed to process image: ${response.statusCode} - ${response.body}');
+    }
+  } catch (e) {
+    print('Error in upload chunks: $e');
+    setState(() {
+      _errorMessage = 'Error: $e';
+      _isLoading = false;
+    });
   }
+}
+
+  Widget _buildPredictionResult() {
+  if (_predictionResult == null) return const SizedBox.shrink();
+
+  // Get prediction data - safely convert to double
+  List<dynamic> rawPredictions = _predictionResult!['predictions'];
+  List<double> predictions = [];
+  
+  // Safely convert each value to double
+  for (var value in rawPredictions) {
+    if (value is int) {
+      predictions.add(value.toDouble());
+    } else if (value is double) {
+      predictions.add(value);
+    } else {
+      // Handle unexpected types by defaulting to 0.0
+      predictions.add(0.0);
+    }
+  }
+
+  // Find highest confidence prediction
+  int maxIndex = 0;
+  double maxValue = predictions[0];
+
+  for (int i = 1; i < predictions.length; i++) {
+    if (predictions[i] > maxValue) {
+      maxValue = predictions[i];
+      maxIndex = i;
+    }
+  }
+
+  String result = _labels[maxIndex];
+  double confidence = maxValue * 100;
+
+  // Build result UI
+  Color resultColor = result == "Mature" ? Colors.green : Colors.orange;
+
+  return Card(
+    margin: const EdgeInsets.all(16),
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          Text(
+            'Analysis Result',
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Icon(
+                result == "Mature" ? Icons.check_circle : Icons.warning,
+                color: resultColor,
+                size: 36,
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      result,
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: resultColor,
+                      ),
+                    ),
+                    Text(
+                      'Confidence: ${confidence.toStringAsFixed(1)}%',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            result == "Mature"
+                ? 'This fruit/vegetable appears to be at optimal maturity for harvest.'
+                : 'This fruit/vegetable appears to be over mature and may need immediate attention.',
+            style: TextStyle(fontSize: 16),
+          ),
+        ],
+      ),
+    ),
+  );
+}
 
   @override
   Widget build(BuildContext context) {

@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:agrisync/App%20Pages/Analytics/PlantDetector.dart';
 import 'package:agrisync/App%20Pages/Forum/forum_page.dart';
 import 'package:agrisync/App%20Pages/Calendar/FarmCalendarPage.dart';
 import 'package:agrisync/App%20Pages/Inventory/InventoryPage.dart';
@@ -1068,7 +1069,12 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                             color: Color.fromARGB(255, 66, 192, 201),
                           ),
                           onTap: () {
-                            // Navigate to Crop Health page
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const PlantMaturityDetectorPage(),
+                              ),
+                            );
                           },
                         ),
                         ToolTile(
