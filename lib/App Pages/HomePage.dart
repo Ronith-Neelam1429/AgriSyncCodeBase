@@ -649,13 +649,17 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         decoration: BoxDecoration(
           gradient: const LinearGradient(
             colors: [
-              Color.fromARGB(255, 27, 94, 32),
+              Color.fromARGB(255, 70, 197, 161),
               Color.fromARGB(255, 87, 189, 179),
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           borderRadius: BorderRadius.circular(15),
+          border: Border.all(
+            color: const Color.fromARGB(255, 0, 0, 0),
+            width: 1,
+          ),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.3),
@@ -793,7 +797,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: [
-            Color.fromARGB(255, 27, 94, 32),
+            Color.fromARGB(255, 120, 187, 208),
             Color.fromARGB(255, 87, 189, 179),
           ],
           begin: Alignment.topLeft,
@@ -1071,7 +1075,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => const PlantMaturityDetectorPage(),
+                                builder: (context) =>
+                                    const PlantMaturityDetectorPage(),
                               ),
                             );
                           },
