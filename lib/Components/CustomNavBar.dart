@@ -1,3 +1,4 @@
+import 'package:agrisync/App%20Pages/ARFarmPlanning/ARFarmPlanningPage.dart';
 import 'package:flutter/material.dart';
 import 'package:curved_navigation_bar/curved_navigation_bar.dart';
 
@@ -26,6 +27,7 @@ class _CustomNavBarState extends State<CustomNavBar> {
     const MarketPlacePage(),
     const AIChatbotPage(),
     const ProfilePage(),
+    const ARFarmPlanningPage(),
     //const YieldForecastPage(),
   ];
 
@@ -65,7 +67,7 @@ class _CustomNavBarState extends State<CustomNavBar> {
             Icon(Icons.shopping_cart, size: 25, color: Colors.white),
             Icon(Icons.chat, size: 25, color: Colors.white),
             Icon(Icons.person, size: 25, color: Colors.white),
-            //Icon(Icons.show_chart, size: 25, color: Colors.white),
+            Icon(Icons.show_chart, size: 25, color: Colors.white),
           ],
 
           // Update the current index on tap

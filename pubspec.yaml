@@ -40,6 +40,7 @@ dependencies:
   table_calendar: ^3.0.8
   syncfusion_flutter_charts: ^28.2.12
   flutter_image_compress: ^2.4.0
+  arcore_flutter_plugin: ^0.1.0
 
 dev_dependencies:
   flutter_test:
