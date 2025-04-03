@@ -107,6 +107,8 @@ class _FarmCalendarPageState extends State<FarmCalendarPage> {
         _isSyncing = true;
       });
       
+      // Force fresh authentication to ensure we get valid tokens
+      await _googleSignIn.signOut();
       final account = await _googleSignIn.signIn();
       if (account == null) {
         setState(() {
@@ -163,6 +165,37 @@ class _FarmCalendarPageState extends State<FarmCalendarPage> {
     }
   }
 
+  // Creates a Google Calendar event and returns the ID
+  Future<String?> _createGoogleCalendarEvent(CalendarEvent event) async {
+    if (_calendarApi == null) return null;
+    
+    try {
+      // Create Google Calendar event
+      final googleEvent = googleCalendar.Event();
+      googleEvent.summary = event.title;
+      googleEvent.description = event.description;
+      
+      // Set start time with timezone
+      final startDateTime = googleCalendar.EventDateTime();
+      startDateTime.dateTime = event.date.toUtc();
+      startDateTime.timeZone = 'UTC';
+      googleEvent.start = startDateTime;
+      
+      // Set end time (1 hour later) with timezone
+      final endDateTime = googleCalendar.EventDateTime();
+      endDateTime.dateTime = event.date.toUtc().add(const Duration(hours: 1));
+      endDateTime.timeZone = 'UTC';
+      googleEvent.end = endDateTime;
+      
+      // Insert the event
+      final createdEvent = await _calendarApi!.events.insert(googleEvent, 'primary');
+      return createdEvent.id;
+    } catch (e) {
+      print("Error creating Google Calendar event: $e");
+      return null;
+    }
+  }
+
   // Sync all events to Google Calendar
   Future<void> _syncEventsToGoogleCalendar() async {
     if (_calendarApi == null) {
@@ -194,22 +227,8 @@ class _FarmCalendarPageState extends State<FarmCalendarPage> {
         if (event.googleCalendarEventId != null) continue;
         
         // Create Google Calendar event
-        final googleEvent = googleCalendar.Event();
-        googleEvent.summary = event.title;
-        googleEvent.description = event.description;
-        
-        // Fix the event date format
-        final startDateTime = googleCalendar.EventDateTime();
-        startDateTime.dateTime = event.date.toUtc();
-        startDateTime.timeZone = 'UTC';
-        googleEvent.start = startDateTime;
-        
-        final endDateTime = googleCalendar.EventDateTime();
-        endDateTime.dateTime = event.date.toUtc().add(const Duration(hours: 1));
-        endDateTime.timeZone = 'UTC';
-        googleEvent.end = endDateTime;
-        
-        final createdEvent = await _calendarApi!.events.insert(googleEvent, 'primary');
+        final eventId = await _createGoogleCalendarEvent(event);
+        if (eventId == null) continue;
         
         // Update Firestore with Google Calendar event ID
         await _firestore
@@ -217,7 +236,7 @@ class _FarmCalendarPageState extends State<FarmCalendarPage> {
             .doc(user.uid)
             .collection('events')
             .doc(event.id)
-            .update({'googleCalendarEventId': createdEvent.id});
+            .update({'googleCalendarEventId': eventId});
             
         syncedCount++;
       }
@@ -252,7 +271,6 @@ class _FarmCalendarPageState extends State<FarmCalendarPage> {
       Map<DateTime, List<CalendarEvent>> eventsMap = {};
       for (var doc in snapshot.docs) {
         final event = CalendarEvent.fromDocument(doc);
-        if (event.date.isBefore(DateTime.now().subtract(const Duration(days: 1)))) continue; // Skip old events
         final dayKey = DateTime(event.date.year, event.date.month, event.date.day);
         eventsMap.putIfAbsent(dayKey, () => []).add(event);
       }
@@ -392,9 +410,12 @@ class _FarmCalendarPageState extends State<FarmCalendarPage> {
         tasks = _fallbackTasks(datesToGenerate);
       }
 
+      int syncedCount = 0;
       for (var task in tasks) {
         DateTime taskDate = DateTime.parse(task["date"]);
         if (taskDate.isBefore(today)) continue;
+        
+        // Create the event with a placeholder ID
         CalendarEvent event = CalendarEvent(
           id: "",
           title: task["title"],
@@ -402,44 +423,36 @@ class _FarmCalendarPageState extends State<FarmCalendarPage> {
           date: taskDate,
         );
         
-        // Add to Firestore
-        final docRef = await _firestore
-            .collection('farmActivities')
-            .doc(user.uid)
-            .collection('events')
-            .add(event.toMap());
-            
-        // Add to Google Calendar if connected
+        // First try to add to Google Calendar if connected
+        String? googleCalendarEventId;
         if (_calendarApi != null) {
           try {
-            final googleEvent = googleCalendar.Event();
-            googleEvent.summary = event.title;
-            googleEvent.description = event.description;
-            
-            // Set proper start and end times
-            final startDateTime = googleCalendar.EventDateTime();
-            startDateTime.dateTime = event.date.toUtc();
-            startDateTime.timeZone = 'UTC';
-            googleEvent.start = startDateTime;
-            
-            final endDateTime = googleCalendar.EventDateTime();
-            endDateTime.dateTime = event.date.toUtc().add(const Duration(hours: 1));
-            endDateTime.timeZone = 'UTC';
-            googleEvent.end = endDateTime;
-            
-            final createdEvent = await _calendarApi!.events.insert(googleEvent, 'primary');
-            
-            // Update Firestore with Google Calendar event ID
-            await docRef.update({'googleCalendarEventId': createdEvent.id});
+            googleCalendarEventId = await _createGoogleCalendarEvent(event);
+            if (googleCalendarEventId != null) {
+              syncedCount++;
+            }
           } catch (e) {
             print("Error adding event to Google Calendar: $e");
           }
         }
+        
+        // Prepare the event data with Google Calendar ID if available
+        Map<String, dynamic> eventData = event.toMap();
+        if (googleCalendarEventId != null) {
+          eventData['googleCalendarEventId'] = googleCalendarEventId;
+        }
+        
+        // Add to Firestore
+        await _firestore
+            .collection('farmActivities')
+            .doc(user.uid)
+            .collection('events')
+            .add(eventData);
       }
       
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(_isGoogleSignedIn 
-            ? "AI tasks generated and synced to Google Calendar" 
+            ? "AI tasks generated and $syncedCount events synced to Google Calendar" 
             : "AI tasks generated successfully for the next 3 weeks"))
       );
     } catch (e) {
@@ -551,7 +564,12 @@ class _FarmCalendarPageState extends State<FarmCalendarPage> {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const AddEventPage()), // Jump to add event page
+                MaterialPageRoute(
+                  builder: (context) => AddEventPage(
+                    googleSignIn: _isGoogleSignedIn ? _googleSignIn : null,
+                    calendarApi: _calendarApi,
+                  ),
+                ),
               );
             },
             tooltip: "Add Event",
@@ -567,9 +585,9 @@ class _FarmCalendarPageState extends State<FarmCalendarPage> {
               color: Colors.green.withOpacity(0.1),
               child: Row(
                 children: [
-                  Icon(Icons.check_circle, color: Colors.green, size: 16),
-                  SizedBox(width: 8),
-                  Expanded(
+                  const Icon(Icons.check_circle, color: Colors.green, size: 16),
+                  const SizedBox(width: 8),
+                  const Expanded(
                     child: Text(
                       "Connected to Google Calendar", 
                       style: TextStyle(color: Colors.green, fontSize: 12),
@@ -577,7 +595,7 @@ class _FarmCalendarPageState extends State<FarmCalendarPage> {
                   ),
                   TextButton(
                     onPressed: _handleGoogleSignOut,
-                    child: Text("Disconnect", style: TextStyle(color: Colors.red, fontSize: 12)),
+                    child: const Text("Disconnect", style: TextStyle(color: Colors.red, fontSize: 12)),
                   )
                 ],
               ),
