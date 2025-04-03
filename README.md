@@ -9,6 +9,7 @@ Before you begin, ensure you have the following installed:
 - Dart SDK
 - Android Studio or VS Code with Flutter plugins
 - Git
+- Node.js and npm (for function dependencies)
 - A suitable IDE (VS Code or Android Studio recommended)
 
 ## Installation
@@ -19,12 +20,25 @@ git clone https://github.com/yourusername/agrisync.git
 cd agrisync
 ```
 
-2. Install dependencies:
+2. Install Flutter dependencies:
 ```bash
 flutter pub get
 ```
 
-3. Verify your installation:
+3. Set up function dependencies:
+```bash
+cd functions
+npm install
+cd ..
+```
+
+4. Create or update the environment variables file:
+```bash
+cp .env.example .env
+```
+Ensure you update the `.env` file with your Stripe API key and other necessary credentials.
+
+5. Verify your installation:
 ```bash
 flutter doctor
 ```
@@ -50,9 +64,10 @@ agrisync/
 │   ├── App Pages/
 │   ├── Components/
 │   ├── Authentication/
-│   └── Themes/
 ├── assets/
+├── functions/
 ├── test/
+├── .env.example
 └── pubspec.yaml
 ```
 
@@ -98,5 +113,6 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## Contact
 
-ronithneelam1429@gmail.com
+ronithneelam1429@gmail.com  
 Project Link: [https://github.com/Ronith-Neelam1429/agrisync](https://github.com/Ronith-Neelam1429/agrisync)
+
