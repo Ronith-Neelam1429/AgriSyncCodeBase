@@ -6,7 +6,7 @@ import 'package:agrisync/App Pages/HomePage.dart';
 import 'package:agrisync/App%20Pages/Weather/WeatherPage.dart';
 import 'package:agrisync/App%20Pages/MarketPlace/MarketPage.dart';
 import 'package:agrisync/App%20Pages/ProfilePage/ProfilePage.dart';
-import 'package:agrisync/App%20Pages/Analytics/AIChatbotPage.dart';
+import 'package:agrisync/App%20Pages/AIFrontend/AIChatbotPage.dart';
 import 'package:agrisync/App%20Pages/Inventory/InventoryPage.dart';
 
 class CustomNavBar extends StatefulWidget {

@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:agrisync/App%20Pages/Analytics/PlantDetector.dart';
+import 'package:agrisync/App%20Pages/AIFrontend/PlantDetector.dart';
 import 'package:agrisync/App%20Pages/Forum/forum_page.dart';
 import 'package:agrisync/App%20Pages/Calendar/FarmCalendarPage.dart';
 import 'package:agrisync/App%20Pages/Inventory/InventoryPage.dart';
