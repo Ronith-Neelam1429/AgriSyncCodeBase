@@ -15,13 +15,13 @@ class _ForumPageState extends State<ForumPage>
     with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
-  final TextEditingController _titleController = TextEditingController();
-  final TextEditingController _contentController = TextEditingController();
-  final TextEditingController _searchController = TextEditingController();
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final TextEditingController _titleController = TextEditingController(); // For the post title
+  final TextEditingController _contentController = TextEditingController(); // For the post body
+  final TextEditingController _searchController = TextEditingController(); // For searching posts
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance; // Firestore hookup
+  final FirebaseAuth _auth = FirebaseAuth.instance; // Auth hookup
   String _searchQuery = '';
-  String _sortBy = 'new';
+  String _sortBy = 'new'; // Default sort is newest posts
 
   @override
   void initState() {
@@ -33,7 +33,7 @@ class _ForumPageState extends State<ForumPage>
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
-    _animationController.forward();
+    _animationController.forward(); // Start the fade-in when the page loads
   }
 
   @override
@@ -42,9 +42,10 @@ class _ForumPageState extends State<ForumPage>
     _titleController.dispose();
     _contentController.dispose();
     _searchController.dispose();
-    super.dispose();
+    super.dispose(); // Clean up when we’re done
   }
 
+  // Makes a new post and saves it
   Future<void> _createPost() async {
     final user = _auth.currentUser;
     if (user == null || _titleController.text.isEmpty) {
@@ -55,16 +56,17 @@ class _ForumPageState extends State<ForumPage>
     }
     try {
       await ForumService()
-          .createPost(_titleController.text, _contentController.text);
+          .createPost(_titleController.text, _contentController.text); // Send it to the service
       _titleController.clear();
       _contentController.clear();
-      Navigator.pop(context);
+      Navigator.pop(context); // Close the modal after posting
     } catch (e) {
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text('Error: $e')));
     }
   }
 
+  // Checks if the user already voted on a post
   Future<bool> _hasUserVoted(
       String postId, String userId, String voteType) async {
     final voteDoc = await _firestore
@@ -76,6 +78,7 @@ class _ForumPageState extends State<ForumPage>
     return voteDoc.exists && voteDoc.data()![voteType] == true;
   }
 
+  // Handles upvoting a post
   Future<void> _upvotePost(
       String postId, int currentUpvotes, String userId) async {
     if (await _hasUserVoted(postId, userId, 'upvoted')) {
@@ -87,7 +90,7 @@ class _ForumPageState extends State<ForumPage>
     await _firestore
         .collection('posts')
         .doc(postId)
-        .update({'upvotes': currentUpvotes + 1});
+        .update({'upvotes': currentUpvotes + 1}); // Bump the upvote count
     await _firestore
         .collection('posts')
         .doc(postId)
@@ -96,6 +99,7 @@ class _ForumPageState extends State<ForumPage>
         .set({'upvoted': true, 'downvoted': false}, SetOptions(merge: true));
   }
 
+  // Handles downvoting a post
   Future<void> _downvotePost(
       String postId, int currentUpvotes, String userId) async {
     if (currentUpvotes <= 0 ||
@@ -108,7 +112,7 @@ class _ForumPageState extends State<ForumPage>
     await _firestore
         .collection('posts')
         .doc(postId)
-        .update({'upvotes': currentUpvotes - 1});
+        .update({'upvotes': currentUpvotes - 1}); // Drop the upvote count
     await _firestore
         .collection('posts')
         .doc(postId)
@@ -117,6 +121,7 @@ class _ForumPageState extends State<ForumPage>
         .set({'upvoted': false, 'downvoted': true}, SetOptions(merge: true));
   }
 
+  // Pops up the modal to create a new post
   void _showCreatePostModal() {
     showModalBottomSheet(
       context: context,
@@ -124,7 +129,7 @@ class _ForumPageState extends State<ForumPage>
       isScrollControlled: true,
       builder: (context) => Padding(
         padding: EdgeInsets.only(
-          bottom: 16.0 + MediaQuery.of(context).viewInsets.bottom,
+          bottom: 16.0 + MediaQuery.of(context).viewInsets.bottom, // Adjust for keyboard
           left: 16.0,
           right: 16.0,
           top: 16.0,
@@ -163,6 +168,7 @@ class _ForumPageState extends State<ForumPage>
     );
   }
 
+  // Reusable styling for text fields
   InputDecoration _inputDecoration(String hint) => InputDecoration(
         hintText: hint,
         hintStyle: const TextStyle(color: Color.fromARGB(255, 108, 108, 108)),
@@ -175,7 +181,7 @@ class _ForumPageState extends State<ForumPage>
 
   @override
   Widget build(BuildContext context) {
-    final userId = _auth.currentUser?.uid ?? '';
+    final userId = _auth.currentUser?.uid ?? ''; // Grab the current user’s ID
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 255, 255, 255),
       appBar: AppBar(
@@ -197,7 +203,7 @@ class _ForumPageState extends State<ForumPage>
                         style: const TextStyle(
                             color: Color.fromARGB(255, 0, 0, 0)))))
                 .toList(),
-            onChanged: (value) => setState(() => _sortBy = value!),
+            onChanged: (value) => setState(() => _sortBy = value!), // Sort posts by this
             dropdownColor: const Color.fromARGB(255, 222, 222, 222),
           ),
         ],
@@ -212,12 +218,12 @@ class _ForumPageState extends State<ForumPage>
                   prefixIcon: const Icon(Icons.search,
                       color: Color.fromARGB(255, 87, 189, 179))),
               onChanged: (value) =>
-                  setState(() => _searchQuery = value.toLowerCase()),
+                  setState(() => _searchQuery = value.toLowerCase()), // Filter posts as you type
             ),
           ),
           Expanded(
             child: FadeTransition(
-              opacity: _fadeAnimation,
+              opacity: _fadeAnimation, // Fade in the post list
               child: StreamBuilder<QuerySnapshot>(
                 stream: _sortBy == 'new'
                     ? _firestore
@@ -232,10 +238,10 @@ class _ForumPageState extends State<ForumPage>
                         : _firestore
                             .collection('posts')
                             .orderBy('upvotes', descending: true)
-                            .snapshots(),
+                            .snapshots(), // Live feed of posts based on sort
                 builder: (context, snapshot) {
                   if (!snapshot.hasData)
-                    return const Center(child: CircularProgressIndicator());
+                    return const Center(child: CircularProgressIndicator()); // Show spinner while loading
                   final posts = snapshot.data!.docs
                       .where((post) => (post['title'] as String)
                           .toLowerCase()
@@ -328,7 +334,7 @@ class _ForumPageState extends State<ForumPage>
                               context,
                               MaterialPageRoute(
                                   builder: (context) => PostDetailsPage(
-                                      postId: post.id, postData: data))),
+                                      postId: post.id, postData: data))), // Go to post details
                         );
                       },
                     ),
@@ -342,7 +348,7 @@ class _ForumPageState extends State<ForumPage>
       floatingActionButton: Padding(
         padding: const EdgeInsets.only(bottom: 16.0),
         child: FloatingActionButton(
-          onPressed: _showCreatePostModal,
+          onPressed: _showCreatePostModal, // Hit this to make a new post
           backgroundColor: const Color.fromARGB(255, 87, 189, 179),
           child: const Icon(Icons.add, color: Colors.white),
         ),
@@ -350,6 +356,7 @@ class _ForumPageState extends State<ForumPage>
     );
   }
 
+  // Turns timestamps into something like "5m" or "2d"
   String _formatTimeAgo(DateTime dateTime) {
     final difference = DateTime.now().difference(dateTime);
     if (difference.inSeconds < 60) return '${difference.inSeconds}s';

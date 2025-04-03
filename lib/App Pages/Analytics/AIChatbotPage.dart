@@ -15,29 +15,29 @@ class AIChatbotPage extends StatefulWidget {
 }
 
 class _AIChatbotPageState extends State<AIChatbotPage> {
-  final _questionController = TextEditingController();
-  final List<Map<String, String>> _chatHistory = [];
-  final ScrollController _scrollController = ScrollController();
-  bool _isLoading = false;
-  bool _isListening = false;
-  late stt.SpeechToText _speech;
+  final _questionController = TextEditingController(); // For user input
+  final List<Map<String, String>> _chatHistory = []; // Stores chat messages
+  final ScrollController _scrollController = ScrollController(); // Controls chat scrolling
+  bool _isLoading = false; // Shows if AI is thinking
+  bool _isListening = false; // Tracks mic status
+  late stt.SpeechToText _speech; // Speech-to-text setup
   final String aiApiKey =
-      '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';
-  String _userContext = "";
-  String _userFirstName = "Farmer";
-  String _weatherInfo = "";
-  final String weatherApiKey = 'eeaca43a04ac307588b75ac98f9871d7';
+      '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'; // AI API key
+  String _userContext = ""; // User’s farm details
+  String _userFirstName = "Farmer"; // Default name if none found
+  String _weatherInfo = ""; // Current weather info
+  final String weatherApiKey = 'eeaca43a04ac307588b75ac98f9871d7'; // Weather API key
 
   @override
   void initState() {
     super.initState();
     _speech = stt.SpeechToText();
-    _requestMicrophonePermission();
-    _loadUserAndWeatherInfo();
+    _requestMicrophonePermission(); // Ask for mic access right away
+    _loadUserAndWeatherInfo(); // Load user and weather data when page starts
   }
 
+  // Grabs user info and weather to personalize the chat
   Future<void> _loadUserAndWeatherInfo() async {
-    // Load user info
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       try {
@@ -54,7 +54,6 @@ class _AIChatbotPageState extends State<AIChatbotPage> {
       } catch (e) {
         debugPrint("Error loading user info: $e");
       }
-      // Load current weather info
       try {
         final location = await LocationService.getCurrentLocation();
         if (location != null) {
@@ -79,10 +78,11 @@ class _AIChatbotPageState extends State<AIChatbotPage> {
         'sender': 'bot',
         'message':
             "Hi $_userFirstName, $_weatherInfo How can I assist you with your farm today?"
-      });
+      }); // Add welcome message
     });
   }
 
+  // Makes sure we can use the mic
   Future<void> _requestMicrophonePermission() async {
     var status = await Permission.microphone.status;
     if (!status.isGranted) {
@@ -90,6 +90,7 @@ class _AIChatbotPageState extends State<AIChatbotPage> {
     }
   }
 
+  // Toggles speech-to-text on or off
   Future<void> _startListening() async {
     if (!_isListening) {
       bool available = await _speech.initialize(
@@ -102,7 +103,7 @@ class _AIChatbotPageState extends State<AIChatbotPage> {
         });
         _speech.listen(onResult: (result) {
           setState(() {
-            _questionController.text = result.recognizedWords;
+            _questionController.text = result.recognizedWords; // Fill text with voice input
           });
         });
       }
@@ -114,6 +115,7 @@ class _AIChatbotPageState extends State<AIChatbotPage> {
     }
   }
 
+  // Hits the AI API for a response
   Future<void> _getAIResponse() async {
     final question = _questionController.text.trim();
     if (question.isEmpty) {
@@ -123,12 +125,11 @@ class _AIChatbotPageState extends State<AIChatbotPage> {
     }
     setState(() {
       _chatHistory.add({'sender': 'user', 'message': question});
-      _isLoading = true;
+      _isLoading = true; // Show loading bar
     });
     _questionController.clear();
     _scrollToBottom();
 
-    // Prepare enriched system prompt
     String systemPrompt =
         "You are an expert AI assistant specialized in agriculture. Context: $_userContext. Also note: $_weatherInfo. Provide a direct, concise answer without any markdown formatting.";
 
@@ -178,6 +179,7 @@ class _AIChatbotPageState extends State<AIChatbotPage> {
     }
   }
 
+  // Scrolls chat to the latest message
   void _scrollToBottom() {
     Future.delayed(const Duration(milliseconds: 300), () {
       if (_scrollController.hasClients) {
@@ -190,6 +192,7 @@ class _AIChatbotPageState extends State<AIChatbotPage> {
     });
   }
 
+  // Builds chat bubbles for user or bot
   Widget _buildChatBubble(Map<String, String> chat) {
     bool isUser = chat['sender'] == 'user';
     Alignment alignment =
@@ -238,7 +241,7 @@ class _AIChatbotPageState extends State<AIChatbotPage> {
               padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
               itemCount: _chatHistory.length,
               itemBuilder: (context, index) {
-                return _buildChatBubble(_chatHistory[index]);
+                return _buildChatBubble(_chatHistory[index]); // Show each message
               },
             ),
           ),
@@ -267,11 +270,11 @@ class _AIChatbotPageState extends State<AIChatbotPage> {
                 IconButton(
                   icon: Icon(_isListening ? Icons.mic_off : Icons.mic,
                       color: const Color.fromARGB(255, 66, 192, 201)),
-                  onPressed: _startListening,
+                  onPressed: _startListening, // Toggle mic
                 ),
                 IconButton(
                   icon: const Icon(Icons.send, color: Color.fromARGB(255, 66, 192, 201)),
-                  onPressed: _isLoading ? null : _getAIResponse,
+                  onPressed: _isLoading ? null : _getAIResponse, // Send question
                 ),
               ],
             ),
@@ -281,7 +284,7 @@ class _AIChatbotPageState extends State<AIChatbotPage> {
               minHeight: 2,
               backgroundColor: Colors.grey,
               valueColor: AlwaysStoppedAnimation<Color>(Color.fromARGB(255, 66, 192, 201)),
-            ),
+            ), // Loading bar when AI’s working
         ],
       ),
     );
@@ -292,6 +295,6 @@ class _AIChatbotPageState extends State<AIChatbotPage> {
     _questionController.dispose();
     _speech.stop();
     _scrollController.dispose();
-    super.dispose();
+    super.dispose(); // Clean up when we’re done
   }
 }

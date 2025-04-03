@@ -10,14 +10,14 @@ class LoginOrRegisterPage extends StatefulWidget {
 }
 
 class _LoginOrRegisterPageState extends State<LoginOrRegisterPage> {
-  bool showLoginPage = true;
+  bool showLoginPage = true; // Start with the login page showing
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: Colors.black, // Dark background for the whole screen
       body: SafeArea(
-        child: SingleChildScrollView(  // Added ScrollView here
+        child: SingleChildScrollView(  // Added ScrollView here so it doesn’t overflow
           child: Padding(
             padding: const EdgeInsets.all(24.0),
             child: SizedBox(  // Added SizedBox to give minimum height
@@ -27,7 +27,7 @@ class _LoginOrRegisterPageState extends State<LoginOrRegisterPage> {
                 children: [
                   IconButton(
                     icon: const Icon(Icons.arrow_back, color: Colors.white),
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: () => Navigator.pop(context), // Back button to leave the page
                   ),
                   const SizedBox(height: 32),
                   RichText(
@@ -45,12 +45,12 @@ class _LoginOrRegisterPageState extends State<LoginOrRegisterPage> {
                           text: 'Agri',
                           style: TextStyle(
                               fontSize: 28,
-                              color: Color.fromARGB(255, 73, 167, 87)),
+                              color: Color.fromARGB(255, 73, 167, 87)), // Green for "Agri"
                         ),
                         TextSpan(
                           text: 'Sync',
                           style:
-                              TextStyle(color: Color.fromARGB(255, 72, 219, 214)),
+                              TextStyle(color: Color.fromARGB(255, 72, 219, 214)), // Teal for "Sync"
                         ),
                       ],
                     ),
@@ -70,12 +70,12 @@ class _LoginOrRegisterPageState extends State<LoginOrRegisterPage> {
                         child: ElevatedButton(
                           onPressed: () {
                             setState(() {
-                              showLoginPage = true;
+                              showLoginPage = true; // Switch to login view
                             });
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor:
-                                showLoginPage ? Colors.white : Colors.transparent,
+                                showLoginPage ? Colors.white : Colors.transparent, // Highlight if active
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(30),
@@ -96,12 +96,12 @@ class _LoginOrRegisterPageState extends State<LoginOrRegisterPage> {
                         child: ElevatedButton(
                           onPressed: () {
                             setState(() {
-                              showLoginPage = false;
+                              showLoginPage = false; // Switch to register view
                             });
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor:
-                                !showLoginPage ? Colors.white : Colors.transparent,
+                                !showLoginPage ? Colors.white : Colors.transparent, // Highlight if active
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(30),
@@ -120,7 +120,7 @@ class _LoginOrRegisterPageState extends State<LoginOrRegisterPage> {
                   ),
                   const SizedBox(height: 24),
                   Expanded(
-                    child: showLoginPage ? const LoginPage() : const RegisterPage(),
+                    child: showLoginPage ? const LoginPage() : const RegisterPage(), // Show either login or register form
                   ),
                 ],
               ),

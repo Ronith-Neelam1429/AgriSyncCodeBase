@@ -10,19 +10,20 @@ class AddEventPage extends StatefulWidget {
 }
 
 class _AddEventPageState extends State<AddEventPage> {
-  final _formKey = GlobalKey<FormState>();
-  final TextEditingController _titleController = TextEditingController();
-  final TextEditingController _descriptionController = TextEditingController();
-  DateTime _selectedDate = DateTime.now();
-  TimeOfDay _selectedTime = const TimeOfDay(hour: 9, minute: 0);
-  bool _isLoading = false;
+  final _formKey = GlobalKey<FormState>(); // Keeps track of the form
+  final TextEditingController _titleController = TextEditingController(); // For the event title
+  final TextEditingController _descriptionController = TextEditingController(); // For the event details
+  DateTime _selectedDate = DateTime.now(); // Default to today
+  TimeOfDay _selectedTime = const TimeOfDay(hour: 9, minute: 0); // Default to 9:00 AM
+  bool _isLoading = false; // Shows if we’re saving
 
+  // Pops up a calendar to pick a date
   Future<void> _selectDate() async {
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: _selectedDate,
-      firstDate: DateTime.now().subtract(const Duration(days: 365)),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
+      firstDate: DateTime.now().subtract(const Duration(days: 365)), // Past year
+      lastDate: DateTime.now().add(const Duration(days: 365)), // Next year
     );
     if (picked != null) {
       setState(() {
@@ -31,6 +32,7 @@ class _AddEventPageState extends State<AddEventPage> {
     }
   }
 
+  // Pops up a clock to pick a time
   Future<void> _selectTime() async {
     final TimeOfDay? picked =
         await showTimePicker(context: context, initialTime: _selectedTime);
@@ -41,14 +43,15 @@ class _AddEventPageState extends State<AddEventPage> {
     }
   }
 
+  // Saves the event to Firestore
   Future<void> _saveEvent() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) return; // Stop if form’s not good
     _formKey.currentState!.save();
 
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
+    if (user == null) return; // No user, no save
     setState(() {
-      _isLoading = true;
+      _isLoading = true; // Show spinner
     });
 
     DateTime eventDateTime = DateTime(
@@ -56,7 +59,7 @@ class _AddEventPageState extends State<AddEventPage> {
       _selectedDate.month,
       _selectedDate.day,
       _selectedTime.hour,
-      _selectedTime.minute,
+      _selectedTime.minute, // Combine date and time
     );
 
     try {
@@ -68,21 +71,22 @@ class _AddEventPageState extends State<AddEventPage> {
         'title': _titleController.text.trim(),
         'description': _descriptionController.text.trim(),
         'date': Timestamp.fromDate(eventDateTime),
-        'createdAt': FieldValue.serverTimestamp(),
+        'createdAt': FieldValue.serverTimestamp(), // Timestamp for sorting
       });
       ScaffoldMessenger.of(context)
           .showSnackBar(const SnackBar(content: Text("Event added successfully")));
-      Navigator.pop(context);
+      Navigator.pop(context); // Back to previous screen
     } catch (e) {
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text("Error saving event: $e")));
     } finally {
       setState(() {
-        _isLoading = false;
+        _isLoading = false; // Hide spinner
       });
     }
   }
 
+  // Reusable styling for text fields
   InputDecoration _inputDecoration(String label) {
     return InputDecoration(
       labelText: label,
@@ -109,7 +113,7 @@ class _AddEventPageState extends State<AddEventPage> {
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: _isLoading
-            ? const Center(child: CircularProgressIndicator())
+            ? const Center(child: CircularProgressIndicator()) // Spinner while saving
             : Form(
                 key: _formKey,
                 child: Column(
@@ -119,14 +123,14 @@ class _AddEventPageState extends State<AddEventPage> {
                       decoration: _inputDecoration('Title'),
                       validator: (value) {
                         if (value == null || value.isEmpty) return 'Please enter a title';
-                        return null;
+                        return null; // Make sure title’s not empty
                       },
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _descriptionController,
                       decoration: _inputDecoration('Description'),
-                      maxLines: 3,
+                      maxLines: 3, // Room for more text
                     ),
                     const SizedBox(height: 16),
                     Row(
@@ -148,7 +152,7 @@ class _AddEventPageState extends State<AddEventPage> {
                     ),
                     const SizedBox(height: 24),
                     ElevatedButton(
-                      onPressed: _saveEvent,
+                      onPressed: _saveEvent, // Hit this to save
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color.fromARGB(255,66,192,201),
                         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 32),

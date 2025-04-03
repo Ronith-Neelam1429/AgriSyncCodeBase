@@ -12,13 +12,13 @@ class InventoryPage extends StatefulWidget {
 }
 
 class _InventoryPageState extends State<InventoryPage> {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance; // Auth hookup
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance; // Firestore hookup
 
   @override
   Widget build(BuildContext context) {
     final user = _auth.currentUser;
-    if (user == null) {
+    if (user == null) { // Check if user’s logged in
       return Scaffold(
         appBar: AppBar(
           title: const Text(
@@ -54,9 +54,9 @@ class _InventoryPageState extends State<InventoryPage> {
             .doc(user.uid)
             .collection('items')
             .orderBy('name', descending: false)
-            .snapshots(),
+            .snapshots(), // Live feed of inventory items, sorted by name
         builder: (context, snapshot) {
-          if (snapshot.hasError) {
+          if (snapshot.hasError) { // Handle any errors
             return Center(
               child: Text(
                 "Error: ${snapshot.error}",
@@ -65,7 +65,7 @@ class _InventoryPageState extends State<InventoryPage> {
             );
           }
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(child: CircularProgressIndicator()); // Show spinner while loading
           }
           final docs = snapshot.data?.docs ?? [];
           if (docs.isEmpty) {
@@ -80,8 +80,9 @@ class _InventoryPageState extends State<InventoryPage> {
             itemCount: docs.length,
             itemBuilder: (context, index) {
               final data = docs[index].data() as Map<String, dynamic>;
-              final docId = docs[index].id;
+              final docId = docs[index].id; // Grab the item’s ID
 
+              // Pull out the data with defaults if missing
               final name = data['name'] ?? 'Unnamed';
               final variety = data['variety'] ?? '';
               final sku = data['internalSKU'] ?? '';
@@ -97,7 +98,7 @@ class _InventoryPageState extends State<InventoryPage> {
                 weeksLeft = unitsInStock / usagePerWeek;
               }
 
-              bool isLow = unitsInStock < alertThreshold;
+              bool isLow = unitsInStock < alertThreshold; // Flag if stock’s below threshold
 
               return Card(
                 color: Colors.grey[100],
@@ -122,7 +123,7 @@ class _InventoryPageState extends State<InventoryPage> {
                       Text(
                         'In Stock: $unitsInStock $unitType',
                         style: TextStyle(
-                          color: isLow ? Colors.red : Colors.black,
+                          color: isLow ? Colors.red : Colors.black, // Red if low
                           fontSize: 13,
                         ),
                       ),
@@ -135,7 +136,7 @@ class _InventoryPageState extends State<InventoryPage> {
                     ],
                   ),
                   trailing: isLow
-                      ? const Icon(Icons.warning, color: Colors.red)
+                      ? const Icon(Icons.warning, color: Colors.red) // Warn if low
                       : const SizedBox(width: 1),
                   onTap: () {
                     // Optionally navigate to a detail or edit page if needed
@@ -152,7 +153,7 @@ class _InventoryPageState extends State<InventoryPage> {
         onPressed: () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => const AddInventoryItemPage()),
+            MaterialPageRoute(builder: (context) => const AddInventoryItemPage()), // Go to add item page
           );
         },
       ),

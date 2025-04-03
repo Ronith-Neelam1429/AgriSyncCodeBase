@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-
 class RegisterPage extends StatefulWidget {
   const RegisterPage({Key? key}) : super(key: key);
 
@@ -13,15 +12,15 @@ class RegisterPage extends StatefulWidget {
 }
 
 class _RegisterPageState extends State<RegisterPage> {
-  final _firstNameController = TextEditingController();
-  final _lastNameController = TextEditingController();
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-  final _confirmPasswordController = TextEditingController();
-  bool _obscurePassword = true;
-  bool _obscureConfirmPassword = true;
-  bool _isLoading = false;
-  final googleAuth = GoogleAuthService();
+  final _firstNameController = TextEditingController(); // For first name input
+  final _lastNameController = TextEditingController(); // For last name input
+  final _emailController = TextEditingController(); // For email input
+  final _passwordController = TextEditingController(); // For password input
+  final _confirmPasswordController = TextEditingController(); // For confirming password
+  bool _obscurePassword = true; // Hide password by default
+  bool _obscureConfirmPassword = true; // Hide confirm password too
+  bool _isLoading = false; // Show loading spinner when busy
+  final googleAuth = GoogleAuthService(); // Google sign-in helper
 
   // Firebase Auth instance
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -31,116 +30,116 @@ class _RegisterPageState extends State<RegisterPage> {
 
   // Register with email and password
   Future<void> register() async {
-  if (_passwordController.text.trim().isEmpty ||
-      _firstNameController.text.trim().isEmpty ||
-      _lastNameController.text.trim().isEmpty ||
-      _emailController.text.trim().isEmpty) {
-    setState(() {
-      _errorMessage = 'All fields are required';
-    });
-    return;
-  }
-
-  if (_passwordController.text != _confirmPasswordController.text) {
-    setState(() {
-      _errorMessage = 'Passwords do not match';
-    });
-    return;
-  }
-
-  setState(() {
-    _isLoading = true;
-    _errorMessage = null;
-  });
-
-  try {
-    // Debug log for registration start
-    print('Starting registration process');
-    print('Email: ${_emailController.text.trim()}');
-    print('First Name: ${_firstNameController.text.trim()}');
-    print('Last Name: ${_lastNameController.text.trim()}');
-
-    // Create user with email and password
-    UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
-      email: _emailController.text.trim(),
-      password: _passwordController.text.trim(),
-    );
-
-    print('Firebase Auth successful. UID: ${userCredential.user!.uid}');
-
-    // Prepare user data
-    final userData = {
-      'firstName': _firstNameController.text.trim(),
-      'lastName': _lastNameController.text.trim(),
-      'email': _emailController.text.trim(),
-      'createdAt': FieldValue.serverTimestamp(),
-      'uid': userCredential.user!.uid,
-    };
-
-    print('Prepared user data: $userData');
-
-    // Get reference to Firestore
-    final FirebaseFirestore firestore = FirebaseFirestore.instance;
-    
-    try {
-      // Attempt to write to Firestore
-      print('Attempting to write to Firestore at path: users/${userCredential.user!.uid}');
-      
-      await firestore
-          .collection('users')
-          .doc(userCredential.user!.uid)
-          .set(userData);
-
-      print('Firestore write successful');
-
-      // Verify the write
-      final docSnapshot = await firestore
-          .collection('users')
-          .doc(userCredential.user!.uid)
-          .get();
-
-      if (docSnapshot.exists) {
-        print('Document verified in Firestore');
-        print('Stored data: ${docSnapshot.data()}');
-      } else {
-        print('WARNING: Document not found after write!');
-      }
-
-    } catch (firestoreError) {
-      print('Firestore error: $firestoreError');
+    if (_passwordController.text.trim().isEmpty ||
+        _firstNameController.text.trim().isEmpty ||
+        _lastNameController.text.trim().isEmpty ||
+        _emailController.text.trim().isEmpty) {
       setState(() {
-        _errorMessage = 'Error saving user data: $firestoreError';
+        _errorMessage = 'All fields are required'; // Check for empty fields
       });
-      // Consider whether to delete the Auth user if Firestore fails
       return;
     }
 
-    // Only navigate if everything was successful
-    if (mounted) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => CustomNavBar()),
-      );
+    if (_passwordController.text != _confirmPasswordController.text) {
+      setState(() {
+        _errorMessage = 'Passwords do not match'; // Make sure passwords match
+      });
+      return;
     }
 
-  } on FirebaseAuthException catch (e) {
-    print('Firebase Auth error: ${e.code} - ${e.message}');
     setState(() {
-      _errorMessage = getErrorMessage(e.code);
+      _isLoading = true; // Start loading
+      _errorMessage = null; // Clear any old errors
     });
-  } catch (e) {
-    print('Unexpected error: $e');
-    setState(() {
-      _errorMessage = 'An unexpected error occurred: $e';
-    });
-  } finally {
-    if (mounted) {
+
+    try {
+      // Debug log for registration start
+      print('Starting registration process');
+      print('Email: ${_emailController.text.trim()}');
+      print('First Name: ${_firstNameController.text.trim()}');
+      print('Last Name: ${_lastNameController.text.trim()}');
+
+      // Create user with email and password
+      UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+      );
+
+      print('Firebase Auth successful. UID: ${userCredential.user!.uid}');
+
+      // Prepare user data
+      final userData = {
+        'firstName': _firstNameController.text.trim(),
+        'lastName': _lastNameController.text.trim(),
+        'email': _emailController.text.trim(),
+        'createdAt': FieldValue.serverTimestamp(),
+        'uid': userCredential.user!.uid,
+      };
+
+      print('Prepared user data: $userData');
+
+      // Get reference to Firestore
+      final FirebaseFirestore firestore = FirebaseFirestore.instance;
+
+      try {
+        // Attempt to write to Firestore
+        print('Attempting to write to Firestore at path: users/${userCredential.user!.uid}');
+
+        await firestore
+            .collection('users')
+            .doc(userCredential.user!.uid)
+            .set(userData); // Save user info to Firestore
+
+        print('Firestore write successful');
+
+        // Verify the write
+        final docSnapshot = await firestore
+            .collection('users')
+            .doc(userCredential.user!.uid)
+            .get();
+
+        if (docSnapshot.exists) {
+          print('Document verified in Firestore');
+          print('Stored data: ${docSnapshot.data()}');
+        } else {
+          print('WARNING: Document not found after write!');
+        }
+
+      } catch (firestoreError) {
+        print('Firestore error: $firestoreError');
+        setState(() {
+          _errorMessage = 'Error saving user data: $firestoreError';
+        });
+        return;
+      }
+
+      // Only navigate if everything was successful
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => CustomNavBar()), // Go to main app
+        );
+      }
+
+    } on FirebaseAuthException catch (e) {
+      print('Firebase Auth error: ${e.code} - ${e.message}');
       setState(() {
-        _isLoading = false;
+        _errorMessage = getErrorMessage(e.code); // Show friendly error
       });
+    } catch (e) {
+      print('Unexpected error: $e');
+      setState(() {
+        _errorMessage = 'An unexpected error occurred: $e';
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false; // Stop loading
+        });
+      }
     }
   }
-}
+
   // Helper method to get user-friendly error messages
   String getErrorMessage(String code) {
     switch (code) {
@@ -249,7 +248,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 ),
                 onPressed: () {
                   setState(() {
-                    _obscurePassword = !_obscurePassword;
+                    _obscurePassword = !_obscurePassword; // Toggle password visibility
                   });
                 },
               ),
@@ -281,7 +280,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 ),
                 onPressed: () {
                   setState(() {
-                    _obscureConfirmPassword = !_obscureConfirmPassword;
+                    _obscureConfirmPassword = !_obscureConfirmPassword; // Toggle confirm password visibility
                   });
                 },
               ),
@@ -294,7 +293,7 @@ class _RegisterPageState extends State<RegisterPage> {
         SizedBox(
           width: double.infinity,
           child: ElevatedButton(
-            onPressed: _isLoading ? null : register,
+            onPressed: _isLoading ? null : register, // Disable button while loading
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.green,
               padding: const EdgeInsets.symmetric(vertical: 16),
@@ -333,7 +332,7 @@ class _RegisterPageState extends State<RegisterPage> {
             OutlinedButton.icon(
               onPressed: () async {
                 try {
-                  setState(() => _isLoading = true);
+                  setState(() => _isLoading = true); // Start loading for Google sign-in
                   final userCredential = await googleAuth.signInWithGoogle();
                   if (userCredential != null && mounted) {
                     Navigator.pushReplacement(
@@ -370,7 +369,6 @@ class _RegisterPageState extends State<RegisterPage> {
                 ),
               ),
             ),
-            
           ],
         ),
       ],
@@ -382,6 +380,6 @@ class _RegisterPageState extends State<RegisterPage> {
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
-    super.dispose();
+    super.dispose(); // Clean up controllers when done
   }
 }

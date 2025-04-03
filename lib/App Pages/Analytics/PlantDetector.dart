@@ -13,28 +13,28 @@ class PlantMaturityDetectorPage extends StatefulWidget {
 }
 
 class _PlantMaturityDetectorPageState extends State<PlantMaturityDetectorPage> {
-  final ImagePicker _picker = ImagePicker();
-  File? _imageFile;
-  bool _isLoading = false;
-  Map<String, dynamic>? _predictionResult;
-  String? _errorMessage;
+  final ImagePicker _picker = ImagePicker(); // Tool to grab images
+  File? _imageFile; // Holds the selected image
+  bool _isLoading = false; // Tracks if we’re analyzing
+  Map<String, dynamic>? _predictionResult; // Stores the AI’s guess
+  String? _errorMessage; // Shows any oopsies
 
-  // Labels (from metadata.json)
+  // Possible outcomes from the AI model
   final List<String> _labels = ["Mature", "Over Mature"];
 
-  // Pick an image from camera
+  // Snaps a pic with the camera
   Future<void> _takePicture() async {
     final XFile? photo = await _picker.pickImage(source: ImageSource.camera);
     if (photo != null) {
       setState(() {
         _imageFile = File(photo.path);
-        _predictionResult = null;
+        _predictionResult = null; // Clear old results
         _errorMessage = null;
       });
     }
   }
 
-  // Pick an image from gallery
+  // Picks an image from the gallery
   Future<void> _selectFromGallery() async {
     final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
     if (image != null) {
@@ -46,22 +46,21 @@ class _PlantMaturityDetectorPageState extends State<PlantMaturityDetectorPage> {
     }
   }
 
-  // Analyze image by compressing and sending it to your prediction API
+  // Compresses and sends the image to the AI API
   Future<void> _analyzeImage() async {
-    if (_imageFile == null) return;
+    if (_imageFile == null) return; // No image, no go
     setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
     try {
-      // Read and compress the image
       final imageBytes = await _imageFile!.readAsBytes();
       final compressedBytes = await FlutterImageCompress.compressWithList(
         imageBytes,
         minWidth: 224,
         minHeight: 224,
         quality: 60,
-        format: CompressFormat.jpeg,
+        format: CompressFormat.jpeg, // Shrink it down for the API
       );
       final base64Image = base64Encode(compressedBytes);
       final response = await http.post(
@@ -88,16 +87,15 @@ class _PlantMaturityDetectorPageState extends State<PlantMaturityDetectorPage> {
     }
   }
 
-  // Build the prediction result card with modern styling
+  // Puts together a nice card with the AI’s prediction
   Widget _buildPredictionResult() {
     if (_predictionResult == null) return const SizedBox.shrink();
 
-    // Convert predictions safely to double
     List<dynamic> rawPredictions = _predictionResult!['predictions'];
     List<double> predictions = rawPredictions.map((value) {
       if (value is int) return value.toDouble();
       if (value is double) return value;
-      return 0.0;
+      return 0.0; // Handle weird data safely
     }).toList();
 
     int maxIndex = 0;
@@ -105,7 +103,7 @@ class _PlantMaturityDetectorPageState extends State<PlantMaturityDetectorPage> {
     for (int i = 1; i < predictions.length; i++) {
       if (predictions[i] > maxValue) {
         maxValue = predictions[i];
-        maxIndex = i;
+        maxIndex = i; // Find the top prediction
       }
     }
     String result = _labels[maxIndex];
@@ -165,7 +163,6 @@ class _PlantMaturityDetectorPageState extends State<PlantMaturityDetectorPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Image preview container with modern card design.
             Card(
               margin: const EdgeInsets.all(16),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -175,7 +172,7 @@ class _PlantMaturityDetectorPageState extends State<PlantMaturityDetectorPage> {
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: const Color.fromARGB(255,66,192,201), width: 2),
-                  color: Colors.grey[50],
+                  color: Colors.grey[50], // Fancy frame for the image
                 ),
                 child: _imageFile != null
                     ? ClipRRect(
@@ -190,17 +187,15 @@ class _PlantMaturityDetectorPageState extends State<PlantMaturityDetectorPage> {
                       ),
               ),
             ),
-            // Display error message if exists.
             if (_errorMessage != null)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Text(
                   _errorMessage!,
                   style: const TextStyle(color: Colors.red, fontSize: 16),
-                  textAlign: TextAlign.center,
+                  textAlign: TextAlign.center, // Show any errors in red
                 ),
               ),
-            // Action buttons row.
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
@@ -211,7 +206,6 @@ class _PlantMaturityDetectorPageState extends State<PlantMaturityDetectorPage> {
                       icon: const Icon(Icons.camera_alt),
                       label: const Text('Camera'),
                       style: ElevatedButton.styleFrom(
-                        
                         backgroundColor: const Color.fromARGB(255,66,192,201),
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 14),
@@ -239,11 +233,10 @@ class _PlantMaturityDetectorPageState extends State<PlantMaturityDetectorPage> {
               ),
             ),
             const SizedBox(height: 16),
-            // Analyze Image button.
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: ElevatedButton.icon(
-                onPressed: _imageFile != null && !_isLoading ? _analyzeImage : null,
+                onPressed: _imageFile != null && !_isLoading ? _analyzeImage : null, // Only works if there’s an image
                 icon: _isLoading
                     ? Container(
                         width: 24,
@@ -265,11 +258,10 @@ class _PlantMaturityDetectorPageState extends State<PlantMaturityDetectorPage> {
                 ),
               ),
             ),
-            // Display prediction result.
             if (_isLoading)
               const Padding(
                 padding: EdgeInsets.all(24),
-                child: Center(child: CircularProgressIndicator()),
+                child: Center(child: CircularProgressIndicator()), // Spinner while we wait
               )
             else
               _buildPredictionResult(),

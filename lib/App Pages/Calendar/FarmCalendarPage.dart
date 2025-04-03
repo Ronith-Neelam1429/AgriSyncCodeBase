@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
 
+// Handy class to hold event info
 class CalendarEvent {
   final String id;
   final String title;
@@ -18,6 +19,7 @@ class CalendarEvent {
     required this.date,
   });
 
+  // Turns Firestore doc into an event
   factory CalendarEvent.fromDocument(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
     return CalendarEvent(
@@ -28,6 +30,7 @@ class CalendarEvent {
     );
   }
 
+  // Preps event data for Firestore
   Map<String, dynamic> toMap() {
     return {
       'title': title,
@@ -41,21 +44,20 @@ class CalendarEvent {
 class FarmCalendarPage extends StatefulWidget {
   final String? userCity;
   final Map<String, dynamic>? currentWeather;
-  const FarmCalendarPage({Key? key, this.userCity, this.currentWeather})
-      : super(key: key);
+  const FarmCalendarPage({Key? key, this.userCity, this.currentWeather}) : super(key: key);
 
   @override
   _FarmCalendarPageState createState() => _FarmCalendarPageState();
 }
 
 class _FarmCalendarPageState extends State<FarmCalendarPage> {
-  late final FirebaseAuth _auth;
-  late final FirebaseFirestore _firestore;
-  CalendarFormat _calendarFormat = CalendarFormat.month;
-  late DateTime _focusedDay;
-  DateTime? _selectedDay;
-  Map<DateTime, List<CalendarEvent>> _events = {};
-  bool _isLoading = false;
+  late final FirebaseAuth _auth; // Auth hookup
+  late final FirebaseFirestore _firestore; // Firestore hookup
+  CalendarFormat _calendarFormat = CalendarFormat.month; // Default to month view
+  late DateTime _focusedDay; // What day we’re zoomed in on
+  DateTime? _selectedDay; // What day we clicked
+  Map<DateTime, List<CalendarEvent>> _events = {}; // Events mapped by date
+  bool _isLoading = false; // Shows if we’re generating tasks
 
   @override
   void initState() {
@@ -64,9 +66,10 @@ class _FarmCalendarPageState extends State<FarmCalendarPage> {
     _firestore = FirebaseFirestore.instance;
     _focusedDay = DateTime.now();
     _selectedDay = _focusedDay;
-    _loadEvents();
+    _loadEvents(); // Kick off event loading
   }
 
+  // Pulls events from Firestore and keeps them updated
   Future<void> _loadEvents() async {
     final user = _auth.currentUser;
     if (user == null) return;
@@ -79,7 +82,7 @@ class _FarmCalendarPageState extends State<FarmCalendarPage> {
       Map<DateTime, List<CalendarEvent>> eventsMap = {};
       for (var doc in snapshot.docs) {
         final event = CalendarEvent.fromDocument(doc);
-        if (event.date.isBefore(DateTime.now().subtract(const Duration(days: 1)))) continue;
+        if (event.date.isBefore(DateTime.now().subtract(const Duration(days: 1)))) continue; // Skip old events
         final dayKey = DateTime(event.date.year, event.date.month, event.date.day);
         eventsMap.putIfAbsent(dayKey, () => []).add(event);
       }
@@ -89,11 +92,13 @@ class _FarmCalendarPageState extends State<FarmCalendarPage> {
     });
   }
 
+  // Gets events for a specific day
   List<CalendarEvent> _getEventsForDay(DateTime day) {
     final key = DateTime(day.year, day.month, day.day);
     return _events[key] ?? [];
   }
 
+  // Fetches user data from Firestore
   Future<Map<String, dynamic>> _fetchUserData() async {
     final user = _auth.currentUser;
     if (user == null) return {};
@@ -104,6 +109,7 @@ class _FarmCalendarPageState extends State<FarmCalendarPage> {
     return {};
   }
 
+  // Clears out future events before generating new ones
   Future<void> _deleteFutureEvents() async {
     final user = _auth.currentUser;
     if (user == null) return;
@@ -119,6 +125,7 @@ class _FarmCalendarPageState extends State<FarmCalendarPage> {
     }
   }
 
+  // Pulls JSON array from AI response text
   String extractJson(String text) {
     int start = text.indexOf('[');
     int end = text.lastIndexOf(']');
@@ -128,10 +135,11 @@ class _FarmCalendarPageState extends State<FarmCalendarPage> {
     return '';
   }
 
+  // Asks AI to make tasks for the next 3 weeks
   Future<void> _generateTasksForNextThreeWeeks() async {
     await _deleteFutureEvents();
     setState(() {
-      _isLoading = true;
+      _isLoading = true; // Show loading bar
     });
     final user = _auth.currentUser;
     if (user == null) return;
@@ -144,7 +152,7 @@ class _FarmCalendarPageState extends State<FarmCalendarPage> {
       userDataInfo =
           "Farm Size: ${userData['farmSize'] ?? 'N/A'}, Preferred Crops: ${(userData['preferredCrops'] as List?)?.join(', ') ?? 'N/A'}.";
     } else {
-      userDataInfo = "Farm Size: 10 acres, Preferred Crops: tomatoes, corn.";
+      userDataInfo = "Farm Size: 10 acres, Preferred Crops: tomatoes, corn."; // Fallback if no data
     }
 
     String weatherInfo = "";
@@ -186,14 +194,14 @@ class _FarmCalendarPageState extends State<FarmCalendarPage> {
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         final aiText = data['choices'][0]['message']['content'].trim();
-        print("AI response: $aiText"); // Log for debugging
+        print("AI response: $aiText"); // Debugging peek
         String jsonString = extractJson(aiText);
         if (jsonString.isNotEmpty) {
           try {
             tasks = json.decode(jsonString);
           } catch (e) {
             print("Error parsing JSON: $e");
-            tasks = _fallbackTasks(datesToGenerate);
+            tasks = _fallbackTasks(datesToGenerate); // Backup plan
           }
         } else {
           print("No valid JSON found in AI response");
@@ -217,7 +225,7 @@ class _FarmCalendarPageState extends State<FarmCalendarPage> {
             .collection('farmActivities')
             .doc(user.uid)
             .collection('events')
-            .add(event.toMap());
+            .add(event.toMap()); // Save each task
       }
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("AI tasks generated successfully for the next 3 weeks.")),
@@ -232,6 +240,7 @@ class _FarmCalendarPageState extends State<FarmCalendarPage> {
     });
   }
 
+  // Backup tasks if AI fails
   List<Map<String, dynamic>> _fallbackTasks(List<DateTime> dates) {
     List<Map<String, dynamic>> tasks = [];
     List<String> fallbackTitles = [
@@ -303,7 +312,7 @@ class _FarmCalendarPageState extends State<FarmCalendarPage> {
         actions: [
           IconButton(
             icon: const Icon(Icons.auto_awesome, color: Color.fromARGB(255, 66, 192, 201)),
-            onPressed: _isLoading ? null : _generateTasksForNextThreeWeeks,
+            onPressed: _isLoading ? null : _generateTasksForNextThreeWeeks, // AI task generator
             tooltip: "Generate Tasks for Next 3 Weeks",
           ),
           IconButton(
@@ -311,7 +320,7 @@ class _FarmCalendarPageState extends State<FarmCalendarPage> {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const AddEventPage()),
+                MaterialPageRoute(builder: (context) => const AddEventPage()), // Jump to add event page
               );
             },
             tooltip: "Add Event",
@@ -331,12 +340,12 @@ class _FarmCalendarPageState extends State<FarmCalendarPage> {
             onDaySelected: (selectedDay, focusedDay) {
               setState(() {
                 _selectedDay = selectedDay;
-                _focusedDay = focusedDay;
+                _focusedDay = focusedDay; // Update what we’re looking at
               });
             },
             onFormatChanged: (format) {
               setState(() {
-                _calendarFormat = format;
+                _calendarFormat = format; // Switch between week/month view
               });
             },
             calendarStyle: const CalendarStyle(
@@ -358,7 +367,7 @@ class _FarmCalendarPageState extends State<FarmCalendarPage> {
               rightChevronIcon: Icon(Icons.chevron_right, color: Color.fromARGB(255, 66, 192, 201)),
             ),
           ),
-          if (_isLoading) const LinearProgressIndicator(),
+          if (_isLoading) const LinearProgressIndicator(), // Loading bar when generating
           Expanded(
             child: ListView(
               children: _getEventsForDay(_selectedDay ?? _focusedDay).map((event) {
@@ -367,7 +376,7 @@ class _FarmCalendarPageState extends State<FarmCalendarPage> {
                   subtitle: Text(event.description, style: const TextStyle(color: Colors.black)),
                   trailing: Text(
                     "${event.date.day}/${event.date.month}",
-                    style: const TextStyle(color: Colors.grey),
+                    style: const TextStyle(color: Colors.grey), // Quick date peek
                   ),
                 );
               }).toList(),
@@ -379,6 +388,7 @@ class _FarmCalendarPageState extends State<FarmCalendarPage> {
   }
 }
 
+// Placeholder for the add event page
 class AddEventPage extends StatelessWidget {
   const AddEventPage({Key? key}) : super(key: key);
 

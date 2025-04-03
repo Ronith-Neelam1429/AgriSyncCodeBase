@@ -12,19 +12,19 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  final usernameController = TextEditingController();
-  final passwordController = TextEditingController();
-  bool _rememberMe = false;
-  bool _obscurePassword = true;
-  bool _isLoading = false;
-  String? _errorMessage;
-  final googleAuth = GoogleAuthService();
-  final _prefs = SharedPreferences.getInstance();
+  final usernameController = TextEditingController(); // For email input
+  final passwordController = TextEditingController(); // For password input
+  bool _rememberMe = false; // Tracks if "remember me" is checked
+  bool _obscurePassword = true; // Hides or shows password
+  bool _isLoading = false; // Shows spinner when signing in
+  String? _errorMessage; // Holds any login errors
+  final googleAuth = GoogleAuthService(); // Google sign-in helper
+  final _prefs = SharedPreferences.getInstance(); // For saving login info
 
   @override
   void initState() {
     super.initState();
-    _loadSavedCredentials();
+    _loadSavedCredentials(); // Check for saved login details when page loads
   }
 
   // Load saved credentials if they exist
@@ -34,21 +34,22 @@ class _LoginPageState extends State<LoginPage> {
       _rememberMe = prefs.getBool('rememberMe') ?? false;
       if (_rememberMe) {
         usernameController.text = prefs.getString('email') ?? '';
-        passwordController.text = prefs.getString('password') ?? '';
+        passwordController.text = prefs.getString('password') ?? ''; // Fill in saved email/password
       }
     });
   }
 
+  // Save or clear credentials based on "remember me"
   Future<void> _handleRememberMe() async {
     final prefs = await _prefs;
     if (_rememberMe) {
       await prefs.setString('email', usernameController.text);
       await prefs.setString('password', passwordController.text);
-      await prefs.setBool('rememberMe', true);
+      await prefs.setBool('rememberMe', true); // Save the details
     } else {
       await prefs.remove('email');
       await prefs.remove('password');
-      await prefs.setBool('rememberMe', false);
+      await prefs.setBool('rememberMe', false); // Wipe them out
     }
   }
 
@@ -57,8 +58,8 @@ class _LoginPageState extends State<LoginPage> {
     if (!mounted) return;
 
     setState(() {
-      _isLoading = true;
-      _errorMessage = null;
+      _isLoading = true; // Show the spinner
+      _errorMessage = null; // Clear old errors
     });
 
     try {
@@ -77,7 +78,7 @@ class _LoginPageState extends State<LoginPage> {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => const CustomNavBar(),
+            builder: (context) => const CustomNavBar(), // Jump to main app
           ),
         );
       }
@@ -116,21 +117,22 @@ class _LoginPageState extends State<LoginPage> {
       });
     } catch (e) {
       setState(() {
-        _errorMessage = e.toString();
+        _errorMessage = e.toString(); // Catch any weird errors
       });
     } finally {
       if (mounted) {
         setState(() {
-          _isLoading = false;
+          _isLoading = false; // Stop the spinner
         });
       }
     }
-    @override
-    void dispose() {
-      usernameController.dispose();
-      passwordController.dispose();
-      super.dispose();
-    }
+  }
+
+  @override
+  void dispose() {
+    usernameController.dispose();
+    passwordController.dispose();
+    super.dispose(); // Clean up controllers
   }
 
   @override
@@ -147,7 +149,7 @@ class _LoginPageState extends State<LoginPage> {
             ),
             child: Text(
               _errorMessage!,
-              style: const TextStyle(color: Colors.red),
+              style: const TextStyle(color: Colors.red), // Show error if there’s one
             ),
           ),
         Container(
@@ -188,7 +190,7 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 onPressed: () {
                   setState(() {
-                    _obscurePassword = !_obscurePassword;
+                    _obscurePassword = !_obscurePassword; // Toggle password visibility
                   });
                 },
               ),
@@ -207,7 +209,7 @@ class _LoginPageState extends State<LoginPage> {
                   value: _rememberMe,
                   onChanged: (value) {
                     setState(() {
-                      _rememberMe = value ?? false;
+                      _rememberMe = value ?? false; // Update remember me state
                     });
                   },
                   fillColor: MaterialStateProperty.all(Colors.transparent),
@@ -233,7 +235,7 @@ class _LoginPageState extends State<LoginPage> {
         SizedBox(
           width: double.infinity,
           child: ElevatedButton(
-            onPressed: _isLoading ? null : signUserIn,
+            onPressed: _isLoading ? null : signUserIn, // Disable button while loading
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.green,
               padding: const EdgeInsets.symmetric(vertical: 16),
@@ -272,7 +274,7 @@ class _LoginPageState extends State<LoginPage> {
             OutlinedButton.icon(
               onPressed: () async {
                 try {
-                  setState(() => _isLoading = true);
+                  setState(() => _isLoading = true); // Start the spinner
                   print("Starting Google Sign In");
                   final userCredential = await googleAuth.signInWithGoogle();
                   print("Sign In Result: ${userCredential?.user?.email}");
@@ -280,7 +282,7 @@ class _LoginPageState extends State<LoginPage> {
                   if (userCredential != null && mounted) {
                     Navigator.pushReplacement(
                       context,
-                      MaterialPageRoute(builder: (context) => const CustomNavBar()),
+                      MaterialPageRoute(builder: (context) => const CustomNavBar()), // Go to main app
                     );
                   }
                 } catch (e, stackTrace) {
@@ -292,7 +294,7 @@ class _LoginPageState extends State<LoginPage> {
                   });
                 } finally {
                   if (mounted) {
-                    setState(() => _isLoading = false);
+                    setState(() => _isLoading = false); // Stop the spinner
                   }
                 }
               },

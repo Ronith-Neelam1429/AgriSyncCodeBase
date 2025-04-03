@@ -2,12 +2,11 @@ import 'package:agrisync/App%20Pages/ProfilePage/EditProfilePage.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart'; // Ensure this import is correct
+import 'package:firebase_storage/firebase_storage.dart'; 
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:agrisync/Authentication/Pages/LogOrSignPage.dart';
-
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -17,7 +16,7 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  Map<String, dynamic>? userData;
+  Map<String, dynamic>? userData; // Holds user info from Firestore
   bool isDarkMode = false;
   bool notificationsEnabled = true;
   bool _isLoading = false;
@@ -25,10 +24,11 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   void initState() {
     super.initState();
-    _loadPreferences();
-    _fetchUserData();
+    _loadPreferences(); // Load saved settings
+    _fetchUserData(); // Grab user data when page starts
   }
 
+  // Pulls theme and notification prefs from storage
   Future<void> _loadPreferences() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
@@ -37,105 +37,99 @@ class _ProfilePageState extends State<ProfilePage> {
     });
   }
 
-Future<void> _fetchUserData() async {
-  setState(() {
-    _isLoading = true;
-  });
-  
-  final user = FirebaseAuth.instance.currentUser;
-  if (user != null) {
-    try {
-      final docRef = FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid);
+  // Fetches or creates user data in Firestore
+  Future<void> _fetchUserData() async {
+    setState(() {
+      _isLoading = true; // Show loading while fetching
+    });
+    
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      try {
+        final docRef = FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid);
+            
+        final doc = await docRef.get();
+        
+        if (doc.exists) {
+          final data = doc.data();
           
-      final doc = await docRef.get();
-      
-      if (doc.exists) {
-        final data = doc.data();
-        
-        // Check if we need to update any missing fields
-        bool needsUpdate = false;
-        Map<String, dynamic> updateData = {};
-        
-        // Check for firstName and lastName
-        if (data?['firstName'] == null && user.displayName != null) {
-          // Split display name into first and last name
-          final nameParts = user.displayName!.split(' ');
-          if (nameParts.isNotEmpty) {
-            updateData['firstName'] = nameParts[0];
-            if (nameParts.length > 1) {
-              updateData['lastName'] = nameParts.sublist(1).join(' ');
-            } else {
-              updateData['lastName'] = '';
+          // Check if we need to fill in missing stuff
+          bool needsUpdate = false;
+          Map<String, dynamic> updateData = {};
+          
+          if (data?['firstName'] == null && user.displayName != null) {
+            final nameParts = user.displayName!.split(' ');
+            if (nameParts.isNotEmpty) {
+              updateData['firstName'] = nameParts[0];
+              updateData['lastName'] = nameParts.length > 1 ? nameParts.sublist(1).join(' ') : '';
+              needsUpdate = true;
             }
+          }
+          
+          if (data?['email'] == null && user.email != null) {
+            updateData['email'] = user.email;
             needsUpdate = true;
           }
-        }
-        
-        // Check for email
-        if (data?['email'] == null && user.email != null) {
-          updateData['email'] = user.email;
-          needsUpdate = true;
-        }
-        
-        // Update if needed
-        if (needsUpdate) {
-          await docRef.update(updateData);
-          // Fetch updated data
-          final updatedDoc = await docRef.get();
-          setState(() {
-            userData = updatedDoc.data();
-            _isLoading = false;
-          });
+          
+          if (needsUpdate) {
+            await docRef.update(updateData);
+            final updatedDoc = await docRef.get();
+            setState(() {
+              userData = updatedDoc.data();
+              _isLoading = false;
+            });
+          } else {
+            setState(() {
+              userData = data;
+              _isLoading = false;
+            });
+          }
         } else {
+          // No doc yet, so make one with defaults
+          final newUserData = {
+            'firstName': user.displayName != null ? user.displayName!.split(' ')[0] : 'AgriSync',
+            'lastName': user.displayName != null && user.displayName!.split(' ').length > 1 
+                       ? user.displayName!.split(' ').sublist(1).join(' ') : 'User',
+            'email': user.email ?? '',
+            'profilePictureUrl': user.photoURL ?? '',
+            'location': 'Not specified',
+            'farmSize': 'Not specified',
+            'preferredCrops': [],
+            'uid': user.uid,
+          };
+          
+          await docRef.set(newUserData);
+          
           setState(() {
-            userData = data;
+            userData = newUserData;
             _isLoading = false;
           });
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Welcome! Your profile has been created')),
+          );
         }
-      } else {
-        // Document doesn't exist, create it with default values
-        final newUserData = {
-          'firstName': user.displayName != null ? user.displayName!.split(' ')[0] : 'AgriSync',
-          'lastName': user.displayName != null && user.displayName!.split(' ').length > 1 
-                     ? user.displayName!.split(' ').sublist(1).join(' ') : 'User',
-          'email': user.email ?? '',
-          'profilePictureUrl': user.photoURL ?? '',
-          'location': 'Not specified',
-          'farmSize': 'Not specified',
-          'preferredCrops': [],
-          'uid': user.uid,
-        };
-        
-        await docRef.set(newUserData);
-        
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error fetching profile: $e')),
+        );
         setState(() {
-          userData = newUserData;
           _isLoading = false;
         });
-        
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Welcome! Your profile has been created')),
-        );
       }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error fetching profile: $e')),
+    } else {
+      // No user, kick them to login
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => const LoginOrRegisterPage()),
+        (route) => false,
       );
-      setState(() {
-        _isLoading = false;
-      });
     }
-  } else {
-    // User is not authenticated, navigate to login page
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (context) => const LoginOrRegisterPage()),
-      (route) => false,
-    );
   }
-}
+
+  // Picks and uploads a new profile pic
   Future<void> _pickImage(ImageSource source) async {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: source);
@@ -157,7 +151,7 @@ Future<void> _fetchUserData() async {
               .update({
             'profilePictureUrl': downloadUrl,
           });
-          await _fetchUserData();
+          await _fetchUserData(); // Refresh data after upload
         } catch (e) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Error uploading image: $e')),
@@ -171,6 +165,7 @@ Future<void> _fetchUserData() async {
     }
   }
 
+  // Shows options for picking a photo
   void _showImageSourceOptions(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -202,34 +197,33 @@ Future<void> _fetchUserData() async {
     );
   }
 
-Future<void> _signOut() async {
-  try {
-    // Clear any stored credentials
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('email');
-    await prefs.remove('password');
-    await prefs.setBool('rememberMe', false);
-    
-    // Sign out from Firebase
-    await FirebaseAuth.instance.signOut();
-    
-    // Navigate to login page
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (context) => const LoginOrRegisterPage()),
-      (route) => false, // This removes all previous routes
-    );
-  } catch (e) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Error signing out: $e')),
-    );
+  // Signs the user out and clears stuff
+  Future<void> _signOut() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('email');
+      await prefs.remove('password');
+      await prefs.setBool('rememberMe', false);
+      
+      await FirebaseAuth.instance.signOut();
+      
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => const LoginOrRegisterPage()),
+        (route) => false, // Wipe the stack and go to login
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error signing out: $e')),
+      );
+    }
   }
-}
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading || userData == null) {
       return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
+        body: Center(child: CircularProgressIndicator()), // Show spinner while loading
       );
     }
 
@@ -245,9 +239,9 @@ Future<void> _signOut() async {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => EditProfilePage(userData: userData!),
+                  builder: (context) => EditProfilePage(userData: userData!), // Go to edit page
                 ),
-              ).then((_) => _fetchUserData());
+              ).then((_) => _fetchUserData()); // Refresh data when back
             },
           ),
         ],
@@ -347,7 +341,7 @@ Future<void> _signOut() async {
                     isDarkMode = value;
                   });
                   final prefs = await SharedPreferences.getInstance();
-                  await prefs.setBool('isDarkMode', value);
+                  await prefs.setBool('isDarkMode', value); // Save theme choice
                 },
               ),
             ),
@@ -449,6 +443,7 @@ Future<void> _signOut() async {
     );
   }
 
+  // Builds section headers
   Widget _buildSectionTitle(BuildContext context, String title) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12.0),
@@ -462,6 +457,7 @@ Future<void> _signOut() async {
     );
   }
 
+  // Builds info rows for farm details
   Widget _buildInfoRow(BuildContext context, String label, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6.0),

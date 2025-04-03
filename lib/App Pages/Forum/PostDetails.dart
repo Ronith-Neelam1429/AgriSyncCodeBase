@@ -14,24 +14,26 @@ class PostDetailsPage extends StatefulWidget {
 }
 
 class _PostDetailsPageState extends State<PostDetailsPage> {
-  final TextEditingController _commentController = TextEditingController();
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  Map<String, String>? _replyTo;
+  final TextEditingController _commentController = TextEditingController(); // For typing comments
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance; // Firestore connection
+  final FirebaseAuth _auth = FirebaseAuth.instance; // Auth connection
+  Map<String, String>? _replyTo; // Tracks who we’re replying to
 
+  // Adds a comment, either new or as a reply
   Future<void> _addComment({String? parentId}) async {
     final user = _auth.currentUser;
-    if (user == null || _commentController.text.isEmpty) return;
+    if (user == null || _commentController.text.isEmpty) return; // Bail if no user or empty text
     try {
       await ForumService().sendComment(widget.postId, _commentController.text, parentId: parentId);
       _commentController.clear();
-      setState(() => _replyTo = null);
+      setState(() => _replyTo = null); // Reset reply mode after sending
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error: $e')));
     }
   }
 
+  // Checks if a user already voted on a comment
   Future<bool> _hasUserVoted(String commentId, String userId, String voteType) async {
     final voteDoc = await _firestore
         .collection('posts')
@@ -44,8 +46,9 @@ class _PostDetailsPageState extends State<PostDetailsPage> {
     return voteDoc.exists && voteDoc.data()![voteType] == true;
   }
 
+  // Upvotes a comment
   Future<void> _upvoteComment(String commentId, int currentUpvotes, String userId) async {
-    if (await _hasUserVoted(commentId, userId, 'upvoted')) return;
+    if (await _hasUserVoted(commentId, userId, 'upvoted')) return; // No double upvotes
     await _firestore.collection('posts').doc(widget.postId)
         .collection('comments').doc(commentId)
         .update({'upvotes': currentUpvotes + 1});
@@ -55,8 +58,9 @@ class _PostDetailsPageState extends State<PostDetailsPage> {
         .set({'upvoted': true, 'downvoted': false}, SetOptions(merge: true));
   }
 
+  // Downvotes a comment
   Future<void> _downvoteComment(String commentId, int currentUpvotes, String userId) async {
-    if (currentUpvotes <= 0 || await _hasUserVoted(commentId, userId, 'downvoted')) return;
+    if (currentUpvotes <= 0 || await _hasUserVoted(commentId, userId, 'downvoted')) return; // Can’t go below 0 or double downvote
     await _firestore.collection('posts').doc(widget.postId)
         .collection('comments').doc(commentId)
         .update({'upvotes': currentUpvotes - 1});
@@ -66,18 +70,20 @@ class _PostDetailsPageState extends State<PostDetailsPage> {
         .set({'upvoted': false, 'downvoted': true}, SetOptions(merge: true));
   }
 
+  // Builds a nested tree of comments
   List<Map<String, dynamic>> buildCommentTree(List<QueryDocumentSnapshot> comments, String? parentId, int depth) {
     List<Map<String, dynamic>> result = [];
     for (var comment in comments) {
       var data = comment.data() as Map<String, dynamic>;
       if (data['parentId'] == parentId) {
         result.add({'comment': comment, 'depth': depth});
-        result.addAll(buildCommentTree(comments, comment.id, depth + 1));
+        result.addAll(buildCommentTree(comments, comment.id, depth + 1)); // Add replies recursively
       }
     }
     return result;
   }
 
+  // Formats timestamps into "5m" or "2d" style
   String _formatTimeAgo(DateTime dateTime) {
     final diff = DateTime.now().difference(dateTime);
     if (diff.inSeconds < 60) return '${diff.inSeconds}s';
@@ -92,7 +98,7 @@ class _PostDetailsPageState extends State<PostDetailsPage> {
     final data = commentData['comment'].data() as Map<String, dynamic>;
     final timeAgo = _formatTimeAgo((data['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now());
     return Padding(
-      padding: EdgeInsets.only(left: 16.0 + depth * 16.0, right: 16.0, top: 8.0, bottom: 8.0),
+      padding: EdgeInsets.only(left: 16.0 + depth * 16.0, right: 16.0, top: 8.0, bottom: 8.0), // Indent based on reply depth
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
@@ -140,7 +146,7 @@ class _PostDetailsPageState extends State<PostDetailsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final userId = _auth.currentUser?.uid ?? '';
+    final userId = _auth.currentUser?.uid ?? ''; // Get the current user’s ID
     final postTime = _formatTimeAgo((widget.postData['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now());
     return Scaffold(
       backgroundColor: Colors.white,
@@ -194,9 +200,9 @@ class _PostDetailsPageState extends State<PostDetailsPage> {
           // Comments Section
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
-              stream: ForumService().getComments(widget.postId),
+              stream: ForumService().getComments(widget.postId), // Live feed of comments
               builder: (context, snapshot) {
-                if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+                if (!snapshot.hasData) return const Center(child: CircularProgressIndicator()); // Show spinner while loading
                 final comments = snapshot.data!.docs;
                 final commentTree = buildCommentTree(comments, null, 0);
                 return ListView.builder(
@@ -204,7 +210,7 @@ class _PostDetailsPageState extends State<PostDetailsPage> {
                   itemBuilder: (context, index) {
                     final commentData = commentTree[index];
                     final depth = commentData['depth'] as int;
-                    return _buildCommentBubble(commentData, depth);
+                    return _buildCommentBubble(commentData, depth); // Build each comment bubble
                   },
                 );
               },
@@ -219,7 +225,7 @@ class _PostDetailsPageState extends State<PostDetailsPage> {
                   child: TextField(
                     controller: _commentController,
                     decoration: InputDecoration(
-                      hintText: _replyTo != null ? 'Reply to u/${_replyTo!['username']}' : 'Add a comment...',
+                      hintText: _replyTo != null ? 'Reply to u/${_replyTo!['username']}' : 'Add a comment...', // Changes if replying
                       hintStyle: const TextStyle(color: Colors.grey),
                       filled: true,
                       fillColor: Colors.grey[200],
@@ -232,7 +238,7 @@ class _PostDetailsPageState extends State<PostDetailsPage> {
                   ),
                 ),
                 if (_replyTo != null)
-                  IconButton(icon: const Icon(Icons.close, color: Colors.grey), onPressed: () => setState(() => _replyTo = null)),
+                  IconButton(icon: const Icon(Icons.close, color: Colors.grey), onPressed: () => setState(() => _replyTo = null)), // Cancel reply
                 IconButton(icon: const Icon(Icons.send, color: Color.fromARGB(255, 66, 192, 201)), onPressed: () => _addComment(parentId: _replyTo?['id'])),
               ],
             ),
@@ -245,6 +251,6 @@ class _PostDetailsPageState extends State<PostDetailsPage> {
   @override
   void dispose() {
     _commentController.dispose();
-    super.dispose();
+    super.dispose(); // Clean up when leaving the page
   }
 }

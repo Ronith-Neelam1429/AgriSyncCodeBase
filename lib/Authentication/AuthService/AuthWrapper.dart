@@ -11,26 +11,27 @@ class AuthWrapper extends StatefulWidget {
 }
 
 class _AuthWrapperState extends State<AuthWrapper> {
-  bool _isLoading = true;
-  bool _isLoggedIn = false;
+  bool _isLoading = true; // Tracks if we’re still checking auth
+  bool _isLoggedIn = false; // Tracks if user is logged in
 
   @override
   void initState() {
     super.initState();
-    _checkAuthState();
+    _checkAuthState(); // Check auth status when the widget starts
   }
 
+  // Checks if a user is logged in with Firebase
   Future<void> _checkAuthState() async {
     final currentUser = FirebaseAuth.instance.currentUser;
     
     if (currentUser != null) {
-      // User is logged in
+      // User’s logged in, so show the app
       setState(() {
         _isLoggedIn = true;
         _isLoading = false;
       });
     } else {
-      // User is not logged in
+      // No user, kick them to login
       setState(() {
         _isLoggedIn = false;
         _isLoading = false;
@@ -41,6 +42,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
+      // Show a spinner while checking auth
       return const Scaffold(
         body: Center(
           child: CircularProgressIndicator(),
@@ -48,10 +50,11 @@ class _AuthWrapperState extends State<AuthWrapper> {
       );
     }
 
+    // Decide what to show based on login status
     if (_isLoggedIn) {
-      return const CustomNavBar();
+      return const CustomNavBar(); // Main app with nav bar
     } else {
-      return const LoginOrRegisterPage();
+      return const LoginOrRegisterPage(); // Login/signup screen
     }
   }
 }

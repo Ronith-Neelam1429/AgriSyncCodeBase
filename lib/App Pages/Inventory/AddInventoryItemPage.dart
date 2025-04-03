@@ -1,4 +1,3 @@
-// lib/App Pages/Inventory/AddInventoryItemPage.dart
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -11,25 +10,26 @@ class AddInventoryItemPage extends StatefulWidget {
 }
 
 class _AddInventoryItemPageState extends State<AddInventoryItemPage> {
-  final _formKey = GlobalKey<FormState>();
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final _formKey = GlobalKey<FormState>(); // Key to manage the form
+  final FirebaseAuth _auth = FirebaseAuth.instance; // Auth hookup
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance; // Firestore hookup
 
   // Inventory fields
   String _name = '';
   String _variety = '';
   String _internalSKU = '';
   String _electronicID = '';
-  String _inventoryUnit = 'Units';
+  String _inventoryUnit = 'Units'; // Default unit type
   double _unitsInStock = 0.0;
   double _usagePerWeek = 0.0;
   double _alertThreshold = 0.0;
 
-  final List<String> _unitTypes = ['Units', 'Pounds', 'Kilograms', 'Liters'];
+  final List<String> _unitTypes = ['Units', 'Pounds', 'Kilograms', 'Liters']; // Options for unit dropdown
 
+  // Saves the item to Firestore
   void _saveInventoryItem() async {
-    if (!_formKey.currentState!.validate()) return;
-    _formKey.currentState!.save();
+    if (!_formKey.currentState!.validate()) return; // Stop if form’s not valid
+    _formKey.currentState!.save(); // Grab all the form data
 
     final user = _auth.currentUser;
     if (user == null) {
@@ -53,13 +53,13 @@ class _AddInventoryItemPageState extends State<AddInventoryItemPage> {
         'unitsInStock': _unitsInStock,
         'usagePerWeek': _usagePerWeek,
         'alertThreshold': _alertThreshold,
-        'timestamp': FieldValue.serverTimestamp(),
+        'timestamp': FieldValue.serverTimestamp(), // Add a timestamp for sorting later
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Inventory item added successfully.")),
       );
-      Navigator.pop(context);
+      Navigator.pop(context); // Go back after saving
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Error saving item: $e")),
@@ -95,14 +95,14 @@ class _AddInventoryItemPageState extends State<AddInventoryItemPage> {
                   }
                   return null;
                 },
-                onSaved: (value) => _name = value!,
+                onSaved: (value) => _name = value!, // Save the name
               ),
               const SizedBox(height: 16),
               // Variety
               TextFormField(
                 style: const TextStyle(color: Colors.black),
                 decoration: _inputDecoration('Variety (e.g. Corn)'),
-                onSaved: (value) => _variety = value ?? '',
+                onSaved: (value) => _variety = value ?? '', // Optional field
               ),
               const SizedBox(height: 16),
               // Internal SKU
@@ -130,7 +130,7 @@ class _AddInventoryItemPageState extends State<AddInventoryItemPage> {
                     child: Text(unit),
                   );
                 }).toList(),
-                onChanged: (value) => setState(() => _inventoryUnit = value!),
+                onChanged: (value) => setState(() => _inventoryUnit = value!), // Update unit type
               ),
               const SizedBox(height: 16),
               // Units in Stock
@@ -164,7 +164,7 @@ class _AddInventoryItemPageState extends State<AddInventoryItemPage> {
                 },
                 onSaved: (value) {
                   if (value == null || value.isEmpty) {
-                    _usagePerWeek = 0.0;
+                    _usagePerWeek = 0.0; // Default to 0 if empty
                   } else {
                     _usagePerWeek = double.parse(value);
                   }
@@ -185,7 +185,7 @@ class _AddInventoryItemPageState extends State<AddInventoryItemPage> {
                 },
                 onSaved: (value) {
                   if (value == null || value.isEmpty) {
-                    _alertThreshold = 0.0;
+                    _alertThreshold = 0.0; // Default to 0 if empty
                   } else {
                     _alertThreshold = double.parse(value);
                   }
@@ -193,7 +193,7 @@ class _AddInventoryItemPageState extends State<AddInventoryItemPage> {
               ),
               const SizedBox(height: 24),
               ElevatedButton(
-                onPressed: _saveInventoryItem,
+                onPressed: _saveInventoryItem, // Hit this to save
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color.fromARGB(255, 66, 192, 201),
                   padding: const EdgeInsets.symmetric(
@@ -213,6 +213,7 @@ class _AddInventoryItemPageState extends State<AddInventoryItemPage> {
     );
   }
 
+  // Reusable styling for text fields
   InputDecoration _inputDecoration(String label) {
     return InputDecoration(
       labelText: label,

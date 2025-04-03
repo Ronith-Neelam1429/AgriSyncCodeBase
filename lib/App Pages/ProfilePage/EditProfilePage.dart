@@ -17,23 +17,25 @@ class _EditProfilePageState extends State<EditProfilePage> {
   late TextEditingController _locationController;
   late TextEditingController _farmSizeController;
   late TextEditingController _preferredCropsController;
-  bool _isLoading = false;
+  bool _isLoading = false; // Tracks if we’re saving
 
   @override
   void initState() {
     super.initState();
+    // Load existing user data into the text fields
     _firstNameController = TextEditingController(text: widget.userData['firstName']);
     _lastNameController = TextEditingController(text: widget.userData['lastName']);
     _locationController = TextEditingController(text: widget.userData['location'] ?? '');
     _farmSizeController = TextEditingController(text: widget.userData['farmSize'] ?? '');
     _preferredCropsController = TextEditingController(
-      text: (widget.userData['preferredCrops'] as List?)?.join(', ') ?? '',
+      text: (widget.userData['preferredCrops'] as List?)?.join(', ') ?? '', // Join crops into a string
     );
   }
 
+  // Saves the updated profile to Firestore
   Future<void> _saveProfile() async {
     setState(() {
-      _isLoading = true;
+      _isLoading = true; // Show spinner while saving
     });
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
@@ -43,20 +45,20 @@ class _EditProfilePageState extends State<EditProfilePage> {
           'lastName': _lastNameController.text.trim(),
           'location': _locationController.text.trim(),
           'farmSize': _farmSizeController.text.trim(),
-          'preferredCrops': _preferredCropsController.text.split(',').map((e) => e.trim()).toList(),
+          'preferredCrops': _preferredCropsController.text.split(',').map((e) => e.trim()).toList(), // Split crops into a list
         };
         await FirebaseFirestore.instance
             .collection('users')
             .doc(user.uid)
             .update(updatedData);
-        Navigator.pop(context);
+        Navigator.pop(context); // Go back after saving
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error updating profile: $e')),
         );
       } finally {
         setState(() {
-          _isLoading = false;
+          _isLoading = false; // Done saving, hide spinner
         });
       }
     }
@@ -64,6 +66,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
   @override
   void dispose() {
+    // Clean up controllers when we’re done
     _firstNameController.dispose();
     _lastNameController.dispose();
     _locationController.dispose();
@@ -79,7 +82,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
         title: const Text('Edit Profile'),
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularProgressIndicator()) // Show spinner if loading
           : Padding(
               padding: const EdgeInsets.all(16.0),
               child: SingleChildScrollView(
@@ -112,7 +115,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     ),
                     const SizedBox(height: 20),
                     ElevatedButton(
-                      onPressed: _saveProfile,
+                      onPressed: _saveProfile, // Hit this to save changes
                       child: const Text('Save'),
                     ),
                   ],
