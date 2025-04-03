@@ -3,7 +3,7 @@ import 'package:agrisync/App%20Pages/Calendar/FarmCalendarPage.dart';
 
 class EventDetailsPage extends StatelessWidget {
   final List<CalendarEvent> events; // List of events for the selected day
-  final DateTime selectedDate; // The day we’re looking at
+  final DateTime selectedDate; // The day we're looking at
 
   const EventDetailsPage({Key? key, required this.events, required this.selectedDate}) : super(key: key);
 
@@ -26,7 +26,7 @@ class EventDetailsPage extends StatelessWidget {
                 "No events for this day.",
                 style: TextStyle(color: Colors.black),
               ),
-            ) // Message if nothing’s planned
+            ) // Message if nothing's planned
           : ListView.builder(
               itemCount: events.length,
               itemBuilder: (context, index) {
@@ -42,9 +42,17 @@ class EventDetailsPage extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          event.title,
-                          style: const TextStyle(color: Colors.black, fontSize: 18, fontWeight: FontWeight.bold),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                event.title,
+                                style: const TextStyle(color: Colors.black, fontSize: 18, fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            if (event.googleCalendarEventId != null)
+                              const Icon(Icons.cloud_done, color: Colors.green, size: 20),
+                          ],
                         ), // Event title stands out
                         const SizedBox(height: 8),
                         Text(

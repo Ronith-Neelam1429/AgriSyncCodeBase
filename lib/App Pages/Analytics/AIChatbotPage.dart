@@ -22,7 +22,7 @@ class _AIChatbotPageState extends State<AIChatbotPage> {
   bool _isListening = false; // Tracks mic status
   late stt.SpeechToText _speech; // Speech-to-text setup
   final String aiApiKey =
-      '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'; // AI API key
+      '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'; // AI API key
   String _userContext = ""; // User’s farm details
   String _userFirstName = "Farmer"; // Default name if none found
   String _weatherInfo = ""; // Current weather info

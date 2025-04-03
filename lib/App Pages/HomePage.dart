@@ -34,7 +34,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   bool isTipLoading = true;
   List<String> savedTips = []; // Store saved tips
   final String aiApiKey =
-      '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'; // OpenRouter API key
+      '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'; // OpenRouter API key
 
   Map<String, dynamic>? currentWeather;
   String? userLat;

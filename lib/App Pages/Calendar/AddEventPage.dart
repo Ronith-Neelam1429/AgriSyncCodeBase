@@ -1,9 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:googleapis/calendar/v3.dart' as googleCalendar;
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:extension_google_sign_in_as_googleapis_auth/extension_google_sign_in_as_googleapis_auth.dart';
 
 class AddEventPage extends StatefulWidget {
-  const AddEventPage({Key? key}) : super(key: key);
+  final GoogleSignIn? googleSignIn;
+  final googleCalendar.CalendarApi? calendarApi;
+  
+  const AddEventPage({
+    Key? key,
+    this.googleSignIn,
+    this.calendarApi,
+  }) : super(key: key);
 
   @override
   _AddEventPageState createState() => _AddEventPageState();
@@ -15,7 +25,20 @@ class _AddEventPageState extends State<AddEventPage> {
   final TextEditingController _descriptionController = TextEditingController(); // For the event details
   DateTime _selectedDate = DateTime.now(); // Default to today
   TimeOfDay _selectedTime = const TimeOfDay(hour: 9, minute: 0); // Default to 9:00 AM
-  bool _isLoading = false; // Shows if we’re saving
+  bool _isLoading = false; // Shows if we're saving
+  bool _isGoogleCalendarConnected = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkGoogleCalendarStatus();
+  }
+  
+  void _checkGoogleCalendarStatus() {
+    setState(() {
+      _isGoogleCalendarConnected = widget.calendarApi != null;
+    });
+  }
 
   // Pops up a calendar to pick a date
   Future<void> _selectDate() async {
@@ -45,7 +68,7 @@ class _AddEventPageState extends State<AddEventPage> {
 
   // Saves the event to Firestore
   Future<void> _saveEvent() async {
-    if (!_formKey.currentState!.validate()) return; // Stop if form’s not good
+    if (!_formKey.currentState!.validate()) return; // Stop if form's not good
     _formKey.currentState!.save();
 
     final user = FirebaseAuth.instance.currentUser;
@@ -63,6 +86,38 @@ class _AddEventPageState extends State<AddEventPage> {
     );
 
     try {
+      // 1. Create Firestore event first
+      String? googleCalendarEventId;
+      
+      // 2. If Google Calendar is connected, create event there
+      if (widget.calendarApi != null) {
+        try {
+          final googleEvent = googleCalendar.Event();
+          googleEvent.summary = _titleController.text.trim();
+          googleEvent.description = _descriptionController.text.trim();
+          
+          // Correctly set start and end time
+          final startDateTime = googleCalendar.EventDateTime();
+          startDateTime.dateTime = eventDateTime.toUtc();
+          startDateTime.timeZone = 'UTC';
+          googleEvent.start = startDateTime;
+          
+          final endDateTime = googleCalendar.EventDateTime();
+          endDateTime.dateTime = eventDateTime.toUtc().add(const Duration(hours: 1));
+          endDateTime.timeZone = 'UTC';
+          googleEvent.end = endDateTime;
+          
+          final createdEvent = await widget.calendarApi!.events.insert(googleEvent, 'primary');
+          googleCalendarEventId = createdEvent.id;
+        } catch (e) {
+          print("Error creating Google Calendar event: $e");
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Failed to add to Google Calendar: $e"))
+          );
+        }
+      }
+
+      // 3. Save to Firestore with Google Calendar ID if available
       await FirebaseFirestore.instance
           .collection('farmActivities')
           .doc(user.uid)
@@ -72,9 +127,14 @@ class _AddEventPageState extends State<AddEventPage> {
         'description': _descriptionController.text.trim(),
         'date': Timestamp.fromDate(eventDateTime),
         'createdAt': FieldValue.serverTimestamp(), // Timestamp for sorting
+        'googleCalendarEventId': googleCalendarEventId,
       });
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text("Event added successfully")));
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(googleCalendarEventId != null 
+            ? "Event added and synced to Google Calendar" 
+            : "Event added successfully"))
+      );
       Navigator.pop(context); // Back to previous screen
     } catch (e) {
       ScaffoldMessenger.of(context)
@@ -118,12 +178,33 @@ class _AddEventPageState extends State<AddEventPage> {
                 key: _formKey,
                 child: Column(
                   children: [
+                    if (_isGoogleCalendarConnected)
+                      Container(
+                        padding: const EdgeInsets.all(8.0),
+                        margin: const EdgeInsets.only(bottom: 16.0),
+                        decoration: BoxDecoration(
+                          color: Colors.green.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8.0),
+                        ),
+                        child: Row(
+                          children: const [
+                            Icon(Icons.cloud_done, color: Colors.green, size: 16),
+                            SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                "This event will be synced to Google Calendar",
+                                style: TextStyle(color: Colors.green, fontSize: 12),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     TextFormField(
                       controller: _titleController,
                       decoration: _inputDecoration('Title'),
                       validator: (value) {
                         if (value == null || value.isEmpty) return 'Please enter a title';
-                        return null; // Make sure title’s not empty
+                        return null; // Make sure title's not empty
                       },
                     ),
                     const SizedBox(height: 16),
