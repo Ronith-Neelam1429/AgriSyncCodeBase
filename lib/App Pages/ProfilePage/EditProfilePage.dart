@@ -17,26 +17,28 @@ class _EditProfilePageState extends State<EditProfilePage> {
   late TextEditingController _locationController;
   late TextEditingController _farmSizeController;
   late TextEditingController _preferredCropsController;
-  bool _isLoading = false; // Tracks if we’re saving
+  bool _isLoading = false;
+  final _formKey = GlobalKey<FormState>();
 
   @override
   void initState() {
     super.initState();
-    // Load existing user data into the text fields
-    _firstNameController = TextEditingController(text: widget.userData['firstName']);
-    _lastNameController = TextEditingController(text: widget.userData['lastName']);
+    _firstNameController = TextEditingController(text: widget.userData['firstName'] ?? '');
+    _lastNameController = TextEditingController(text: widget.userData['lastName'] ?? '');
     _locationController = TextEditingController(text: widget.userData['location'] ?? '');
     _farmSizeController = TextEditingController(text: widget.userData['farmSize'] ?? '');
     _preferredCropsController = TextEditingController(
-      text: (widget.userData['preferredCrops'] as List?)?.join(', ') ?? '', // Join crops into a string
+      text: (widget.userData['preferredCrops'] as List?)?.join(', ') ?? '',
     );
   }
 
-  // Saves the updated profile to Firestore
   Future<void> _saveProfile() async {
+    if (!_formKey.currentState!.validate()) return;
+
     setState(() {
-      _isLoading = true; // Show spinner while saving
+      _isLoading = true;
     });
+
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       try {
@@ -45,28 +47,44 @@ class _EditProfilePageState extends State<EditProfilePage> {
           'lastName': _lastNameController.text.trim(),
           'location': _locationController.text.trim(),
           'farmSize': _farmSizeController.text.trim(),
-          'preferredCrops': _preferredCropsController.text.split(',').map((e) => e.trim()).toList(), // Split crops into a list
+          'preferredCrops': _preferredCropsController.text
+              .split(',')
+              .map((e) => e.trim())
+              .where((e) => e.isNotEmpty)
+              .toList(),
+          'updatedAt': FieldValue.serverTimestamp(),
         };
+
         await FirebaseFirestore.instance
             .collection('users')
             .doc(user.uid)
             .update(updatedData);
-        Navigator.pop(context); // Go back after saving
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Profile updated successfully')),
+        );
+        Navigator.pop(context, true);
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error updating profile: $e')),
         );
       } finally {
         setState(() {
-          _isLoading = false; // Done saving, hide spinner
+          _isLoading = false;
         });
       }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('User not logged in')),
+      );
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
   @override
   void dispose() {
-    // Clean up controllers when we’re done
     _firstNameController.dispose();
     _lastNameController.dispose();
     _locationController.dispose();
@@ -82,43 +100,72 @@ class _EditProfilePageState extends State<EditProfilePage> {
         title: const Text('Edit Profile'),
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator()) // Show spinner if loading
+          ? const Center(child: CircularProgressIndicator())
           : Padding(
               padding: const EdgeInsets.all(16.0),
-              child: SingleChildScrollView(
-                child: Column(
-                  children: [
-                    TextField(
-                      controller: _firstNameController,
-                      decoration: const InputDecoration(labelText: 'First Name'),
-                    ),
-                    const SizedBox(height: 16),
-                    TextField(
-                      controller: _lastNameController,
-                      decoration: const InputDecoration(labelText: 'Last Name'),
-                    ),
-                    const SizedBox(height: 16),
-                    TextField(
-                      controller: _locationController,
-                      decoration: const InputDecoration(labelText: 'Location'),
-                    ),
-                    const SizedBox(height: 16),
-                    TextField(
-                      controller: _farmSizeController,
-                      decoration: const InputDecoration(labelText: 'Farm Size'),
-                    ),
-                    const SizedBox(height: 16),
-                    TextField(
-                      controller: _preferredCropsController,
-                      decoration: const InputDecoration(
-                          labelText: 'Preferred Crops (comma-separated)'),
-                    ),
-                    const SizedBox(height: 20),
-                    ElevatedButton(
-                      onPressed: _saveProfile, // Hit this to save changes
-                      child: const Text('Save'),
-                    ),
-                  ],
+              child: Form(
+                key: _formKey,
+                child: SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      TextFormField(
+                        controller: _firstNameController,
+                        decoration: const InputDecoration(labelText: 'First Name'),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Please enter your first name';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _lastNameController,
+                        decoration: const InputDecoration(labelText: 'Last Name'),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Please enter your last name';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _locationController,
+                        decoration: const InputDecoration(labelText: 'Location'),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Please enter your location';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _farmSizeController,
+                        decoration: const InputDecoration(labelText: 'Farm Size (e.g., 10 acres)'),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Please enter your farm size';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _preferredCropsController,
+                        decoration: const InputDecoration(
+                          labelText: 'Preferred Crops (comma-separated)',
+                          hintText: 'e.g., Wheat, Corn, Soybeans',
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      ElevatedButton(
+                        onPressed: _saveProfile,
+                        child: const Text('Save'),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),

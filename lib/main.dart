@@ -2,6 +2,8 @@ import 'package:agrisync/Authentication/AuthService/AuthWrapper.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:provider/provider.dart';
+import 'package:agrisync/Providers/ThemeProvider.dart';
 import 'firebase_options.dart';
 
 void main() async {
@@ -33,13 +35,20 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'AgriSync',
-      theme: ThemeData(
-        primarySwatch: Colors.green,
+    return ChangeNotifierProvider(
+      create: (_) => ThemeProvider(),
+      child: Consumer<ThemeProvider>(
+        builder: (context, themeProvider, child) {
+          return MaterialApp(
+            title: 'AgriSync',
+            theme: themeProvider.lightTheme,
+            darkTheme: themeProvider.darkTheme,
+            themeMode: themeProvider.themeMode,
+            debugShowCheckedModeBanner: false,
+            home: const AuthWrapper(),
+          );
+        },
       ),
-      debugShowCheckedModeBanner: false,
-      home: const AuthWrapper(),
     );
   }
 }

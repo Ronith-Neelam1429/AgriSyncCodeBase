@@ -1,11 +1,13 @@
-import 'package:agrisync/App%20Pages/ProfilePage/EditProfilePage.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart'; 
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:provider/provider.dart';
+import 'package:agrisync/Providers/ThemeProvider.dart';
+import 'package:agrisync/App%20Pages/ProfilePage/EditProfilePage.dart';
 import 'package:agrisync/Authentication/Pages/LogOrSignPage.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -16,49 +18,42 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  Map<String, dynamic>? userData; // Holds user info from Firestore
-  bool isDarkMode = false;
+  Map<String, dynamic>? userData;
   bool notificationsEnabled = true;
   bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    _loadPreferences(); // Load saved settings
-    _fetchUserData(); // Grab user data when page starts
+    _loadPreferences();
+    _fetchUserData();
   }
 
-  // Pulls theme and notification prefs from storage
+  // Load notification preferences
   Future<void> _loadPreferences() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      isDarkMode = prefs.getBool('isDarkMode') ?? false;
       notificationsEnabled = prefs.getBool('notificationsEnabled') ?? true;
     });
   }
 
-  // Fetches or creates user data in Firestore
+  // Fetch or initialize user data from Firestore
   Future<void> _fetchUserData() async {
     setState(() {
-      _isLoading = true; // Show loading while fetching
+      _isLoading = true;
     });
-    
+
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       try {
-        final docRef = FirebaseFirestore.instance
-            .collection('users')
-            .doc(user.uid);
-            
+        final docRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
         final doc = await docRef.get();
-        
+
         if (doc.exists) {
           final data = doc.data();
-          
-          // Check if we need to fill in missing stuff
           bool needsUpdate = false;
           Map<String, dynamic> updateData = {};
-          
+
           if (data?['firstName'] == null && user.displayName != null) {
             final nameParts = user.displayName!.split(' ');
             if (nameParts.isNotEmpty) {
@@ -67,12 +62,12 @@ class _ProfilePageState extends State<ProfilePage> {
               needsUpdate = true;
             }
           }
-          
+
           if (data?['email'] == null && user.email != null) {
             updateData['email'] = user.email;
             needsUpdate = true;
           }
-          
+
           if (needsUpdate) {
             await docRef.update(updateData);
             final updatedDoc = await docRef.get();
@@ -87,26 +82,28 @@ class _ProfilePageState extends State<ProfilePage> {
             });
           }
         } else {
-          // No doc yet, so make one with defaults
+          // Create a new user document
           final newUserData = {
             'firstName': user.displayName != null ? user.displayName!.split(' ')[0] : 'AgriSync',
-            'lastName': user.displayName != null && user.displayName!.split(' ').length > 1 
-                       ? user.displayName!.split(' ').sublist(1).join(' ') : 'User',
+            'lastName': user.displayName != null && user.displayName!.split(' ').length > 1
+                ? user.displayName!.split(' ').sublist(1).join(' ')
+                : 'User',
             'email': user.email ?? '',
             'profilePictureUrl': user.photoURL ?? '',
             'location': 'Not specified',
             'farmSize': 'Not specified',
             'preferredCrops': [],
             'uid': user.uid,
+            'createdAt': FieldValue.serverTimestamp(),
           };
-          
+
           await docRef.set(newUserData);
-          
+
           setState(() {
             userData = newUserData;
             _isLoading = false;
           });
-          
+
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Welcome! Your profile has been created')),
           );
@@ -120,7 +117,6 @@ class _ProfilePageState extends State<ProfilePage> {
         });
       }
     } else {
-      // No user, kick them to login
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (context) => const LoginOrRegisterPage()),
@@ -129,7 +125,7 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-  // Picks and uploads a new profile pic
+  // Upload a new profile picture
   Future<void> _pickImage(ImageSource source) async {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: source);
@@ -143,15 +139,17 @@ class _ProfilePageState extends State<ProfilePage> {
           final storageRef = FirebaseStorage.instance
               .ref()
               .child('profile_pictures/${user.uid}.jpg');
-          await storageRef.putFile(File(pickedFile.path));
+          final uploadTask = storageRef.putFile(File(pickedFile.path));
+          await uploadTask.whenComplete(() => null);
           final downloadUrl = await storageRef.getDownloadURL();
           await FirebaseFirestore.instance
               .collection('users')
               .doc(user.uid)
-              .update({
-            'profilePictureUrl': downloadUrl,
-          });
-          await _fetchUserData(); // Refresh data after upload
+              .update({'profilePictureUrl': downloadUrl});
+          await _fetchUserData();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Profile picture updated')),
+          );
         } catch (e) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Error uploading image: $e')),
@@ -161,11 +159,18 @@ class _ProfilePageState extends State<ProfilePage> {
             _isLoading = false;
           });
         }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('User not logged in')),
+        );
+        setState(() {
+          _isLoading = false;
+        });
       }
     }
   }
 
-  // Shows options for picking a photo
+  // Show image source options
   void _showImageSourceOptions(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -197,20 +202,20 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  // Signs the user out and clears stuff
+  // Sign out
   Future<void> _signOut() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('email');
       await prefs.remove('password');
       await prefs.setBool('rememberMe', false);
-      
+
       await FirebaseAuth.instance.signOut();
-      
+
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (context) => const LoginOrRegisterPage()),
-        (route) => false, // Wipe the stack and go to login
+        (route) => false,
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -221,17 +226,17 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+
     if (_isLoading || userData == null) {
       return const Scaffold(
-        body: Center(child: CircularProgressIndicator()), // Show spinner while loading
+        body: Center(child: CircularProgressIndicator()),
       );
     }
 
     return Scaffold(
-      backgroundColor: Colors.white,
       appBar: AppBar(
         title: const Text('My Profile'),
-        backgroundColor: Colors.white,
         actions: [
           IconButton(
             icon: const Icon(Icons.edit),
@@ -239,9 +244,13 @@ class _ProfilePageState extends State<ProfilePage> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => EditProfilePage(userData: userData!), // Go to edit page
+                  builder: (context) => EditProfilePage(userData: userData!),
                 ),
-              ).then((_) => _fetchUserData()); // Refresh data when back
+              ).then((result) {
+                if (result == true) {
+                  _fetchUserData();
+                }
+              });
             },
           ),
         ],
@@ -304,10 +313,8 @@ class _ProfilePageState extends State<ProfilePage> {
                 ],
               ),
             ),
-
             const SizedBox(height: 24),
             const Divider(),
-
             _buildSectionTitle(context, 'Farm Information'),
             _buildInfoRow(
                 context, 'Location', userData!['location'] ?? 'Not specified'),
@@ -321,27 +328,21 @@ class _ProfilePageState extends State<ProfilePage> {
               context,
               'Member Since',
               userData!['createdAt'] != null
-                  ? (userData!['createdAt'] as Timestamp).toDate().year.toString()
+                  ? (userData!['createdAt'] as Timestamp).toDate().toString()
                   : 'Not specified',
             ),
-
             const SizedBox(height: 24),
             const Divider(),
-
             _buildSectionTitle(context, 'App Settings'),
             ListTile(
               leading: const Icon(Icons.brightness_6),
               title: const Text('App Theme'),
-              subtitle: Text(isDarkMode ? 'Dark Mode' : 'Light Mode'),
+              subtitle: Text(themeProvider.isDarkMode ? 'Dark Mode' : 'Light Mode'),
               trailing: Switch(
-                value: isDarkMode,
+                value: themeProvider.isDarkMode,
                 activeColor: const Color.fromARGB(255, 35, 167, 182),
-                onChanged: (value) async {
-                  setState(() {
-                    isDarkMode = value;
-                  });
-                  final prefs = await SharedPreferences.getInstance();
-                  await prefs.setBool('isDarkMode', value); // Save theme choice
+                onChanged: (value) {
+                  themeProvider.toggleTheme(value);
                 },
               ),
             ),
@@ -349,7 +350,7 @@ class _ProfilePageState extends State<ProfilePage> {
               leading: const Icon(Icons.notifications),
               title: const Text('Notifications'),
               subtitle: Text(notificationsEnabled
-                  ? 'Enabled - Weather alerts, crop cycles, market updates'
+                  ? 'Enabled - Weather alerts, crop cycles'
                   : 'Disabled'),
               trailing: Switch(
                 value: notificationsEnabled,
@@ -363,79 +364,13 @@ class _ProfilePageState extends State<ProfilePage> {
                 },
               ),
             ),
-            ListTile(
-              leading: const Icon(Icons.straighten),
-              title: const Text('Units of Measurement'),
-              subtitle: const Text('Metric System'),
-              onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                      content: Text('Units settings to be implemented')),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.language),
-              title: const Text('Language'),
-              subtitle: const Text('English'),
-              onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                      content: Text('Language settings to be implemented')),
-                );
-              },
-            ),
-
             const SizedBox(height: 24),
             const Divider(),
-
             _buildSectionTitle(context, 'Account'),
             ListTile(
-              leading: const Icon(Icons.link),
-              title: const Text('Connected Services'),
-              subtitle: const Text('Weather API, Market Integration, Soil Sensors'),
-              onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                      content: Text('Connected services to be implemented')),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.download),
-              title: const Text('Export Farm Data'),
-              subtitle: const Text('Download your data in CSV or PDF format'),
-              onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                      content: Text('Data export to be implemented')),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.security),
-              title: const Text('Privacy & Security'),
-              onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                      content: Text('Privacy settings to be implemented')),
-                );
-              },
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 16.0),
-              child: Center(
-                child: ElevatedButton.icon(
-                  icon: const Icon(Icons.logout),
-                  label: const Text('Sign Out'),
-                  style: ElevatedButton.styleFrom(
-                    foregroundColor: Colors.white,
-                    backgroundColor: Colors.red,
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                  ),
-                  onPressed: _signOut,
-                ),
-              ),
+              leading: const Icon(Icons.logout),
+              title: const Text('Sign Out'),
+              onTap: _signOut,
             ),
           ],
         ),
@@ -443,7 +378,6 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  // Builds section headers
   Widget _buildSectionTitle(BuildContext context, String title) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12.0),
@@ -457,7 +391,6 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  // Builds info rows for farm details
   Widget _buildInfoRow(BuildContext context, String label, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6.0),

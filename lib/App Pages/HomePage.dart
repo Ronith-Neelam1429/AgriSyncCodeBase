@@ -34,7 +34,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   bool isTipLoading = true;
   List<String> savedTips = []; // Store saved tips
   final String aiApiKey =
-      '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'; // OpenRouter API key
+      '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'; // OpenRouter API key
 
   Map<String, dynamic>? currentWeather;
   String? userLat;
@@ -710,7 +710,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                     ),
                     ToolTile(
                       title: "Crop Health",
-                      icon: const Icon(Icons.health_and_safety, size: 23, color: Color.fromARGB(255, 66, 192, 201)),
+                      icon: const Icon(Icons.health_and_safety, size: 21, color: Color.fromARGB(255, 66, 192, 201)),
                       onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const PlantMaturityDetectorPage())),
                     ),
                     ToolTile(
